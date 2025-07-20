@@ -1,55 +1,19 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+const Flat = require('../models/Flat');
+const User = require('../models/User');
+const Payment = require('../models/Payment');
 
 // MongoDB connection
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/maintenance-system');
+    await mongoose.connect(process.env.MONGODB_URI);
     console.log('MongoDB connected successfully');
   } catch (error) {
     console.error('MongoDB connection error:', error);
     process.exit(1);
   }
 };
-
-// User Schema
-const userSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  phone: { type: String, required: true },
-  role: { type: String, enum: ['user', 'admin'], default: 'user' },
-  flatNumber: { type: String, required: true }
-}, { timestamps: true });
-
-// Flat Schema
-const flatSchema = new mongoose.Schema({
-  flatNumber: { type: String, required: true, unique: true },
-  ownerName: { type: String, required: true },
-  ownerEmail: { type: String, required: true },
-  ownerPhone: { type: String, required: true },
-  isOccupied: { type: Boolean, default: true },
-  connectedFlats: [{ type: String }],
-  monthlyMaintenance: { type: Number, default: 1500 }
-}, { timestamps: true });
-
-// Payment Schema
-const paymentSchema = new mongoose.Schema({
-  flatNumber: { type: String, required: true },
-  amount: { type: Number, required: true },
-  month: { type: Number, required: true },
-  year: { type: Number, required: true },
-  paymentMode: { type: String, required: true },
-  transactionId: { type: String },
-  status: { type: String, enum: ['pending', 'completed', 'failed'], default: 'completed' },
-  paidBy: { type: String, required: true },
-  paidOn: { type: Date, default: Date.now }
-}, { timestamps: true });
-
-const User = mongoose.model('User', userSchema);
-const Flat = mongoose.model('Flat', flatSchema);
-const Payment = mongoose.model('Payment', paymentSchema);
 
 // Indian names for realistic data
 const indianNames = [
@@ -72,11 +36,15 @@ const indianNames = [
   'Raman Kumar', 'Saraswati Devi', 'Ganga Ram', 'Durga Devi', 'Shiv Kumar',
   'Parvati Devi', 'Ram Kumar', 'Sita Ram', 'Hanuman Singh', 'Radha Krishna',
   'Arjun Singh', 'Draupadi Devi', 'Bhim Singh', 'Kunti Devi', 'Yudhishthir Kumar',
-  'Gandhari Devi', 'Karna Singh', 'Subhadra Devi', 'Abhimanyu Kumar', 'Uttara Devi'
+  'Gandhari Devi', 'Karna Singh', 'Subhadra Devi', 'Abhimanyu Kumar', 'Uttara Devi',
+  'Indra Kumar', 'Saraswati Sharma', 'Vishnu Patel', 'Lakshmi Gupta', 'Brahma Singh',
+  'Parvati Verma', 'Shiva Agarwal', 'Durga Mishra', 'Ganesha Tiwari', 'Kali Yadav',
+  'Surya Kumar', 'Chandra Sharma', 'Vayu Singh', 'Prithvi Patel', 'Agni Gupta',
+  'Varuna Verma', 'Kubera Agarwal', 'Yama Mishra', 'Kartikeya Tiwari', 'Murugan Yadav'
 ];
 
 // Payment modes
-const paymentModes = ['Cash', 'UPI', 'Bank Transfer', 'Cheque', 'Online', 'Card'];
+const paymentModes = ['Cash', 'UPI', 'Bank Transfer', 'Cheque', 'Online'];
 
 // Generate random phone number
 const generatePhone = () => {
@@ -94,34 +62,16 @@ const generateEmail = (name) => {
   return `${username}@${domain}`;
 };
 
-// Generate random transaction ID
-const generateTransactionId = () => {
-  return 'TXN' + Math.random().toString(36).substr(2, 9).toUpperCase();
-};
-
 // Generate mock data
 const generateMockData = async () => {
   try {
     console.log('Starting mock data generation...');
 
-    // Clear existing data
-    await User.deleteMany({});
+    // Clear existing data except admin
+    await User.deleteMany({ role: { $ne: 'admin' } });
     await Flat.deleteMany({});
     await Payment.deleteMany({});
-    console.log('Cleared existing data');
-
-    // Create admin user
-    const hashedPassword = await bcrypt.hash('admin123', 10);
-    const adminUser = new User({
-      name: 'Admin User',
-      email: 'admin@maintenance.com',
-      password: hashedPassword,
-      phone: '9999999999',
-      role: 'admin',
-      flatNumber: 'ADMIN'
-    });
-    await adminUser.save();
-    console.log('Created admin user');
+    console.log('Cleared existing data (kept admin users)');
 
     // Generate 500 flats
     const flats = [];
@@ -130,41 +80,33 @@ const generateMockData = async () => {
     for (let i = 1; i <= 500; i++) {
       const flatNumber = i.toString().padStart(3, '0');
       const ownerName = indianNames[Math.floor(Math.random() * indianNames.length)];
-      const ownerEmail = generateEmail(ownerName);
-      const ownerPhone = generatePhone();
       
       // Create connected flats (every 3 flats are connected)
       const connectedFlats = [];
       const groupStart = Math.floor((i - 1) / 3) * 3 + 1;
       for (let j = 0; j < 3; j++) {
         const connectedFlatNum = (groupStart + j).toString().padStart(3, '0');
-        if (connectedFlatNum !== flatNumber) {
+        if (connectedFlatNum !== flatNumber && (groupStart + j) <= 500) {
           connectedFlats.push(connectedFlatNum);
         }
       }
 
       const flat = new Flat({
         flatNumber,
-        ownerName,
-        ownerEmail,
-        ownerPhone,
-        isOccupied: Math.random() > 0.2, // 80% occupancy rate
-        connectedFlats,
-        monthlyMaintenance: Math.random() > 0.9 ? 2000 : 1500 // 10% have higher maintenance
+        connectedFlats
       });
 
       flats.push(flat);
 
-      // Create user for occupied flats (80% of flats)
-      if (flat.isOccupied && Math.random() > 0.2) {
-        const userPassword = await bcrypt.hash('password123', 10);
+      // Create user for 80% of flats
+      if (Math.random() > 0.2) {
         const user = new User({
-          name: ownerName,
-          email: ownerEmail,
-          password: userPassword,
-          phone: ownerPhone,
+          username: ownerName.toLowerCase().replace(/\s+/g, '') + flatNumber,
+          email: generateEmail(ownerName),
+          password: 'password123',
           role: 'user',
-          flatNumber
+          flatNumber,
+          contact: generatePhone()
         });
         users.push(user);
       }
@@ -172,49 +114,53 @@ const generateMockData = async () => {
 
     // Save flats and users
     await Flat.insertMany(flats);
-    await User.insertMany(users);
+    
+    for (const user of users) {
+      await user.save(); // Save individually to trigger password hashing
+    }
+    
     console.log(`Created ${flats.length} flats and ${users.length} users`);
 
     // Generate payment history for the last 12 months
     const payments = [];
     const currentDate = new Date();
-    const currentMonth = currentDate.getMonth() + 1;
-    const currentYear = currentDate.getFullYear();
+    const months = ['January', 'February', 'March', 'April', 'May', 'June',
+                   'July', 'August', 'September', 'October', 'November', 'December'];
 
-    for (const flat of flats) {
-      if (!flat.isOccupied) continue;
-
-      // Generate 3-8 random payments for each flat over the last 12 months
+    for (const user of users) {
+      // Generate 3-8 random payments for each user over the last 12 months
       const numPayments = Math.floor(Math.random() * 6) + 3;
       const paidMonths = new Set();
 
       for (let p = 0; p < numPayments; p++) {
         let month, year;
+        let monthName;
+        
         do {
           const monthsBack = Math.floor(Math.random() * 12);
-          const paymentDate = new Date(currentYear, currentMonth - 1 - monthsBack, 1);
-          month = paymentDate.getMonth() + 1;
+          const paymentDate = new Date();
+          paymentDate.setMonth(paymentDate.getMonth() - monthsBack);
+          
+          month = paymentDate.getMonth();
           year = paymentDate.getFullYear();
-        } while (paidMonths.has(`${year}-${month}`));
+          monthName = months[month];
+        } while (paidMonths.has(`${year}-${monthName}`));
 
-        paidMonths.add(`${year}-${month}`);
+        paidMonths.add(`${year}-${monthName}`);
 
         const paymentMode = paymentModes[Math.floor(Math.random() * paymentModes.length)];
-        const amount = flat.monthlyMaintenance + (Math.random() > 0.8 ? Math.floor(Math.random() * 500) : 0);
+        const amount = 1500 + (Math.random() > 0.8 ? Math.floor(Math.random() * 500) : 0);
         
         // Random payment date within the month
         const paymentDay = Math.floor(Math.random() * 28) + 1;
-        const paidOn = new Date(year, month - 1, paymentDay);
+        const paidOn = new Date(year, month, paymentDay);
 
         const payment = new Payment({
-          flatNumber: flat.flatNumber,
-          amount,
-          month,
+          flatNumber: user.flatNumber,
+          month: monthName,
           year,
+          amount,
           paymentMode,
-          transactionId: paymentMode !== 'Cash' ? generateTransactionId() : undefined,
-          status: 'completed',
-          paidBy: flat.ownerName,
           paidOn
         });
 
@@ -229,18 +175,17 @@ const generateMockData = async () => {
     console.log('\n=== MOCK DATA GENERATION COMPLETE ===');
     console.log(`✅ Created 500 flats`);
     console.log(`✅ Created ${users.length} users (80% occupancy)`);
-    console.log(`✅ Created 1 admin user`);
     console.log(`✅ Created ${payments.length} payment records`);
     console.log(`✅ Connected flats in groups of 3`);
-    console.log('\nLogin credentials:');
-    console.log('Admin: admin@maintenance.com / admin123');
-    console.log('Users: Any generated email / password123');
-    console.log('\nSample user emails:');
+    console.log('\nSample login credentials:');
+    console.log('Admin: admin / admin123');
+    console.log('Users: password123 for all users');
+    console.log('\nSample user credentials:');
     
-    // Show first 5 user emails
+    // Show first 5 user credentials
     const sampleUsers = users.slice(0, 5);
     sampleUsers.forEach(user => {
-      console.log(`- ${user.email} (Flat ${user.flatNumber})`);
+      console.log(`- Username: ${user.username} | Email: ${user.email} | Flat: ${user.flatNumber}`);
     });
 
   } catch (error) {
