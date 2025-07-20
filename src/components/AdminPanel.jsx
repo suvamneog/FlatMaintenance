@@ -293,7 +293,7 @@ const AdminPanel = () => {
                   onChange={(e) => setSelectedYear(parseInt(e.target.value))}
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  {[2024, 2023, 2022, 2021, 2020].map(year => (
+                  {[2025, 2024, 2023, 2022, 2021, 2020].map(year => (
                     <option key={year} value={year}>{year}</option>
                   ))}
                 </select>
