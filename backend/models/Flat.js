@@ -6,7 +6,11 @@ const flatSchema = new mongoose.Schema({
     required: true,
     unique: true,
     trim: true
-  }
+  },
+  connectedFlats: [{
+    type: String,
+    ref: 'Flat' 
+  }]
 }, {
   timestamps: true
 });

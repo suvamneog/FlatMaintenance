@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Phone, User, CreditCard, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Header from './Header';
-import { flatGraph } from '../data/sampleData';
 
 const FlatDetails = () => {
   const { flatNumber } = useParams();
@@ -11,6 +10,7 @@ const FlatDetails = () => {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [allFlats, setAllFlats] = useState([]);
 
   const { getAuthHeaders, API_BASE_URL, isAdmin, user } = useAuth();
 
@@ -20,16 +20,20 @@ const FlatDetails = () => {
 
   const fetchFlatDetails = async () => {
     try {
-      const [flatResponse, paymentsResponse] = await Promise.all([
+      const [flatResponse, paymentsResponse, flatsResponse] = await Promise.all([
         fetch(`${API_BASE_URL}/flats/${flatNumber}`, { headers: getAuthHeaders() }),
         fetch(`${API_BASE_URL}/payments/flat/${flatNumber}`, { headers: getAuthHeaders() }),
+        fetch(`${API_BASE_URL}/flats`, { headers: getAuthHeaders() })
       ]);
 
-      if (flatResponse.ok && paymentsResponse.ok) {
+      if (flatResponse.ok && paymentsResponse.ok && flatsResponse.ok) {
         const flatData = await flatResponse.json();
         const paymentsData = await paymentsResponse.json();
+        const flatsData = await flatsResponse.json();
+
         setFlat(flatData);
         setPayments(paymentsData);
+        setAllFlats(flatsData);
       } else {
         setError('Failed to fetch flat details');
       }
@@ -39,28 +43,38 @@ const FlatDetails = () => {
       setLoading(false);
     }
   };
-const handleClearOwner = async () => {
-  if (!window.confirm(`Clear owner info for Flat ${flatNumber}?`)) return;
 
-  try {
-    const res = await fetch(`${API_BASE_URL}/flats/${flatNumber}/clear-owner`, {
-      method: 'PUT',
-      headers: getAuthHeaders()
-    });
+  const handleClearOwner = async () => {
+    if (!window.confirm(`Clear owner info for Flat ${flatNumber}?`)) return;
 
-    if (res.ok) {
-      alert('Owner info cleared');
-      fetchFlatDetails(); // Refresh data
-    } else {
-      alert('Failed to clear owner info');
+    try {
+      const res = await fetch(`${API_BASE_URL}/flats/${flatNumber}/clear-owner`, {
+        method: 'PUT',
+        headers: getAuthHeaders()
+      });
+
+      if (res.ok) {
+        alert('Owner info cleared');
+        fetchFlatDetails(); // Refresh
+      } else {
+        alert('Failed to clear owner info');
+      }
+    } catch (err) {
+      alert('Server error');
     }
-  } catch (err) {
-    alert('Server error');
-  }
-};
+  };
 
-  // 🔍 DFS function to find full group
-  const findGroupForFlat = (startFlat) => {
+  // 🔍 Build graph dynamically from allFlats
+  const buildGraphFromFlats = (flats) => {
+    const graph = {};
+    flats.forEach(flat => {
+      graph[flat.flatNumber] = flat.connectedFlats || [];
+    });
+    return graph;
+  };
+
+  // 🔍 DFS to find group
+  const findGroupForFlat = (startFlat, graph) => {
     const visited = new Set();
     const group = [];
 
@@ -68,7 +82,7 @@ const handleClearOwner = async () => {
       if (visited.has(flatNo)) return;
       visited.add(flatNo);
       group.push(flatNo);
-      const neighbors = flatGraph[flatNo] || [];
+      const neighbors = graph[flatNo] || [];
       neighbors.forEach(dfs);
     };
 
@@ -76,11 +90,10 @@ const handleClearOwner = async () => {
     return group;
   };
 
-  // Get the full group and connected flats
-  const groupFlats = findGroupForFlat(flatNumber);
-  const connectedFlats = groupFlats.filter(f => f !== flatNumber);
+  const flatGraph = useMemo(() => buildGraphFromFlats(allFlats), [allFlats]);
+  const groupFlats = useMemo(() => findGroupForFlat(flatNumber, flatGraph), [flatNumber, flatGraph]);
+  const connectedFlats = useMemo(() => groupFlats.filter(f => f !== flatNumber), [groupFlats]);
 
-  // Helper to check if a flat has paid this month
   const hasPaidThisMonth = (flatNum) => {
     const now = new Date();
     const month = now.toLocaleString('default', { month: 'long' });
@@ -88,7 +101,6 @@ const handleClearOwner = async () => {
     return payments.some(p => p.flatNumber === flatNum && p.month === month && p.year === year);
   };
 
-  // Group stats
   const getGroupStats = () => {
     let paid = 0;
     for (const f of groupFlats) {
@@ -150,7 +162,7 @@ const handleClearOwner = async () => {
           </Link>
         </div>
 
-        {/* Flat Info Card */}
+        {/* Flat Info */}
         <div className="bg-white rounded-2xl shadow-sm p-8 mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div className="mb-6 md:mb-0">
@@ -166,26 +178,27 @@ const handleClearOwner = async () => {
                 </div>
               </div>
             </div>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4">
-  <Link
-    to="/add-payment"
-    state={{ flatNumber }}
-    className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-  >
-    <Plus className="w-5 h-5" />
-    <span>Add Payment</span>
-  </Link>
 
-  {isAdmin() && (
-    <button
-      onClick={handleClearOwner}
-      className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-    >
-      <User className="w-5 h-5" />
-      <span>Clear Owner Info</span>
-    </button>
-  )}
-</div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4">
+              <Link
+                to="/add-payment"
+                state={{ flatNumber }}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Add Payment</span>
+              </Link>
+
+              {isAdmin() && (
+                <button
+                  onClick={handleClearOwner}
+                  className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 flex items-center space-x-2"
+                >
+                  <User className="w-5 h-5" />
+                  <span>Clear Owner Info</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -241,20 +254,19 @@ const handleClearOwner = async () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Group Stats */}
             {isAdmin() && (
               <div className="bg-white rounded-xl shadow-sm p-6">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Group Statistics</h3>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex justify-between">
                     <span className="text-gray-600">Total Flats in Group</span>
                     <span className="font-semibold text-gray-800">{groupStats.total}</span>
                   </div>
-                  <div className="flex items-center justify-between">
+                  <div className="flex justify-between">
                     <span className="text-gray-600">Paid This Month</span>
                     <span className="font-semibold text-green-600">{groupStats.paid}</span>
                   </div>
-                  <div className="flex items-center justify-between">
+                  <div className="flex justify-between">
                     <span className="text-gray-600">Pending Dues</span>
                     <span className="font-semibold text-red-600">{groupStats.due}</span>
                   </div>

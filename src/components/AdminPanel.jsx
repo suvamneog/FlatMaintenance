@@ -38,28 +38,30 @@ const AdminPanel = () => {
     }
   };
 
-  const toggleUserStatus = async (userId) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/toggle`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(users.map(user => 
-          user._id === userId ? data.user : user
-        ));
-      } else {
-        setError('Failed to update user status');
+ const toggleUserStatus = async (userId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/toggle`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
       }
-    } catch (error) {
-      setError('Network error occurred');
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      setUsers(users.map(user =>
+        user._id === userId ? data.user : user
+      ));
+      setError(''); // clear previous error
+    } else {
+      setError(data.message || 'Failed to update user status');
     }
-  };
+  } catch (error) {
+    setError('Network error occurred');
+  }
+};
 
   const seedDatabase = async () => {
     setSeedLoading(true);
@@ -128,6 +130,14 @@ const AdminPanel = () => {
     <Plus className="w-5 h-5" />
     <span>Add Flat</span>
   </Link>
+    <button
+  onClick={seedDatabase}
+  disabled={seedLoading}
+  className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  <Database className="w-5 h-5" />
+  <span>{seedLoading ? 'Seeding...' : 'Seed Database'}</span>
+</button>
 
  
 </div>

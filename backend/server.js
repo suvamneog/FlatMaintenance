@@ -22,7 +22,7 @@ app.use(cors());
 app.use(express.json());
 
 // MongoDB connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/maintenance_system', {
+mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
@@ -31,6 +31,7 @@ const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', () => {
   console.log('Connected to MongoDB');
+  console.log("Connecting to MongoDB URI:", process.env.MONGODB_URI);
 });
 
 // Auth Routes
@@ -92,7 +93,7 @@ app.post('/api/auth/login', async (req, res) => {
     const user = await User.findOne({
       $or: [{ username }, { email: username }],
       isActive: true
-    }).select('+password'); // This is crucial!
+    }).select('+password'); 
 
     if (!user) {
       return res.status(401).json({ 
@@ -167,7 +168,6 @@ app.get('/api/admin/users', authenticateToken, requireAdmin, async (req, res) =>
   }
 });
 
-// Toggle user active status (admin only)
 app.put('/api/admin/users/:userId/toggle', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const user = await User.findById(req.params.userId);
@@ -175,7 +175,24 @@ app.put('/api/admin/users/:userId/toggle', authenticateToken, requireAdmin, asyn
       return res.status(404).json({ message: 'User not found' });
     }
 
-    user.isActive = !user.isActive;
+    const isActivating = !user.isActive;
+
+    // Prevent duplicate flat assignment when activating
+    if (isActivating && user.flatNumber) {
+      const existingActiveUser = await User.findOne({
+        flatNumber: user.flatNumber,
+        isActive: true,
+        _id: { $ne: user._id } // exclude the current user
+      });
+
+      if (existingActiveUser) {
+        return res.status(400).json({
+          message: `Cannot activate user. Flat ${user.flatNumber} is already assigned to ${existingActiveUser.username}.`
+        });
+      }
+    }
+
+    user.isActive = isActivating;
     await user.save();
 
     res.json({ success: true, user });
@@ -183,7 +200,43 @@ app.put('/api/admin/users/:userId/toggle', authenticateToken, requireAdmin, asyn
     res.status(500).json({ message: error.message });
   }
 });
+// Connect two flats (admin only)
+app.put('/api/flats/:flatNumber/connect', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { flatNumber } = req.params;
+    const { connectTo } = req.body; // expecting a string or array of flatNumbers
 
+    if (!connectTo || (Array.isArray(connectTo) && connectTo.length === 0)) {
+      return res.status(400).json({ message: 'Missing flats to connect' });
+    }
+
+    const flat = await Flat.findOne({ flatNumber });
+    if (!flat) return res.status(404).json({ message: 'Flat not found' });
+
+    // Ensure all target flats exist
+    const targets = Array.isArray(connectTo) ? connectTo : [connectTo];
+    const foundTargets = await Flat.find({ flatNumber: { $in: targets } });
+
+    if (foundTargets.length !== targets.length) {
+      return res.status(400).json({ message: 'One or more target flats do not exist' });
+    }
+
+    // Avoid duplicates
+    const currentConnections = new Set(flat.connectedFlats);
+    targets.forEach(ft => currentConnections.add(ft));
+    flat.connectedFlats = Array.from(currentConnections);
+
+    await flat.save();
+
+    res.json({
+      success: true,
+      message: `Connected ${flatNumber} to ${targets.join(', ')}`,
+      connectedFlats: flat.connectedFlats
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 // Flat Routes
 
 // Get all flats (admin can see all, users can see only their flat)
@@ -227,12 +280,10 @@ app.get('/api/flats', authenticateToken, async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
-
-// Create new flat (admin only)
+//flat added
 app.post('/api/flats', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { flatNumber } = req.body;
-console.log('Incoming Flat Payload:', req.body);
     if (!flatNumber) {
       return res.status(400).json({ message: 'Flat number is required' });
     }
@@ -242,14 +293,54 @@ console.log('Incoming Flat Payload:', req.body);
       return res.status(400).json({ message: 'Flat already exists' });
     }
 
-    const flat = new Flat({ flatNumber }); // Only flatNumber now
-    const savedFlat = await flat.save();
+    const allFlats = await Flat.find().sort({ flatNumber: 1 });
+    let group = null;
+
+    for (let flat of allFlats) {
+      const connected = flat.connectedFlats || [];
+     if (connected.length < 2) {
+  const groupSet = new Set([flat.flatNumber, ...connected]);
+
+  for (let fno of connected) {
+    const reverseFlat = allFlats.find(f => f.flatNumber === fno);
+    reverseFlat?.connectedFlats?.forEach(cf => groupSet.add(cf));
+  }
+
+  if (groupSet.size < 3) {
+    group = Array.from(groupSet);
+    break;
+  }
+}
+    }
+
+    const newFlat = new Flat({
+      flatNumber,
+      connectedFlats: []
+    });
+
+
+    if (group && group.length < 3) {
+      for (const fno of group) {
+        const f = await Flat.findOne({ flatNumber: fno });
+
+        if (!f.connectedFlats.includes(flatNumber)) {
+          f.connectedFlats.push(flatNumber);
+          await f.save();
+        }
+
+        if (!newFlat.connectedFlats.includes(fno)) {
+          newFlat.connectedFlats.push(fno);
+        }
+      }
+    }
+
+    const savedFlat = await newFlat.save();
     res.status(201).json(savedFlat);
+
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 });
-
 // Get only unassigned flats (for signup dropdown)
 app.get('/api/flats/available', async (req, res) => {
   try {
@@ -393,43 +484,55 @@ app.delete('/api/payments/:id', authenticateToken, requireAdmin, async (req, res
 
 app.post('/api/seed', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    // Clear existing data
+    // 1. Clear existing data
     await Promise.all([
       Flat.deleteMany({}),
       Payment.deleteMany({}),
       User.deleteMany({})
     ]);
 
-    // Insert sample flats
-    const flats = [
-      { flatNumber: '101' },
-      { flatNumber: '102' },
-      { flatNumber: '103' },
-      { flatNumber: '201' },
-      { flatNumber: '202' },
-      { flatNumber: '203' },
-      { flatNumber: '301' },
-      { flatNumber: '302' },
+    // 2. Define all flat numbers in order
+    const flatNumbers = [
+      '101', '102', '103',
+      '201', '202', '203',
+      '301',
     ];
+
+    // 3. Dynamically assign connectedFlats in groups of 3
+    const flats = [];
+
+    for (let i = 0; i < flatNumbers.length; i++) {
+      const current = flatNumbers[i];
+      const groupIndex = Math.floor(i / 3) * 3;
+
+      const connectedFlats = [];
+
+      // connect to previous in group
+      if (i % 3 !== 0) {
+        connectedFlats.push(flatNumbers[i - 1]);
+      }
+
+      // connect to next in group
+      if (i % 3 !== 2 && i + 1 < flatNumbers.length) {
+        connectedFlats.push(flatNumbers[i + 1]);
+      }
+
+      flats.push({ flatNumber: current, connectedFlats });
+    }
+
     await Flat.insertMany(flats);
 
-    // Create users - MUST use individual saves for password hashing
-    const createUser = async (userData) => {
-      const user = new User(userData);
-      await user.save();
-      return user;
-    };
-
-    // Create admin user
-    await createUser({
+    // 4. Create admin user
+    const admin = new User({
       username: 'admin',
       email: 'admin@maintenance.com',
       password: 'admin123',
       role: 'admin',
       contact: '9876500000'
     });
+    await admin.save();
 
-    // Create regular users
+    // 5. Create sample users for first few flats
     const users = [
       {
         username: 'rajesh101',
@@ -454,27 +557,75 @@ app.post('/api/seed', authenticateToken, requireAdmin, async (req, res) => {
         role: 'user',
         flatNumber: '103',
         contact: '9876534567'
+      },
+      {
+        username: 'kiran201',
+        email: 'kiran@example.com',
+        password: 'password123',
+        role: 'user',
+        flatNumber: '201',
+        contact: '9876545678'
+      },
+      {
+        username: 'sita202',
+        email: 'sita@example.com',
+        password: 'password123',
+        role: 'user',
+        flatNumber: '202',
+        contact: '9876556789'
       }
     ];
 
     for (const userData of users) {
-      await createUser(userData);
+      const user = new User(userData);
+      await user.save();
     }
 
-    // Insert sample payments
+    // 6. Insert some sample payments
     const payments = [
-      { flatNumber: '101', month: 'January', year: 2024, amount: 1500, paidOn: new Date('2024-01-05'), paymentMode: 'UPI' },
-      { flatNumber: '101', month: 'February', year: 2024, amount: 1500, paidOn: new Date('2024-02-03'), paymentMode: 'Cash' },
-      { flatNumber: '102', month: 'January', year: 2024, amount: 1500, paidOn: new Date('2024-01-10'), paymentMode: 'Bank Transfer' }
+      {
+        flatNumber: '101',
+        month: 'June',
+        year: 2024,
+        amount: 1500,
+        paidOn: new Date('2024-06-05'),
+        paymentMode: 'UPI'
+      },
+      {
+        flatNumber: '101',
+        month: 'July',
+        year: 2024,
+        amount: 1500,
+        paidOn: new Date('2024-07-01'),
+        paymentMode: 'Cash'
+      },
+      {
+        flatNumber: '102',
+        month: 'June',
+        year: 2024,
+        amount: 1500,
+        paidOn: new Date('2024-06-10'),
+        paymentMode: 'Bank Transfer'
+      },
+      {
+        flatNumber: '202',
+        month: 'July',
+        year: 2024,
+        amount: 1500,
+        paidOn: new Date('2024-07-08'),
+        paymentMode: 'Online'
+      }
     ];
+
     await Payment.insertMany(payments);
 
+    // 7. Return response
     res.json({
       success: true,
-      message: 'Database seeded successfully',
+      message: 'Mock data seeded successfully with grouped flats',
       credentials: {
         admin: { username: 'admin', password: 'admin123' },
-        sampleUser: { username: 'rajesh101', password: 'password123' }
+        user: { username: 'rajesh101', password: 'password123' }
       }
     });
   } catch (error) {

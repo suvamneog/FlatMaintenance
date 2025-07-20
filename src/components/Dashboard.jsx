@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { Search, Filter, Home, Users, TrendingUp, Plus, Building2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Header from './Header';
-import { flatGraph } from '../data/sampleData';
 
 const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -12,6 +11,7 @@ const Dashboard = () => {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [groups, setGroups] = useState([]);
 
   const { getAuthHeaders, API_BASE_URL, isAdmin, user } = useAuth();
 
@@ -20,62 +20,49 @@ const Dashboard = () => {
   }, []);
 
   const fetchData = async () => {
-    try {
-      const [flatsResponse, paymentsResponse] = await Promise.all([
-        fetch(`${API_BASE_URL}/flats`, {
-          headers: getAuthHeaders()
-        }),
-        fetch(`${API_BASE_URL}/payments`, {
-          headers: getAuthHeaders()
-        })
-      ]);
+  try {
+    const [flatsResponse, paymentsResponse] = await Promise.all([
+      fetch(`${API_BASE_URL}/flats`, {
+        headers: getAuthHeaders()
+      }),
+      fetch(`${API_BASE_URL}/payments`, {
+        headers: getAuthHeaders()
+      })
+    ]);
 
-      if (flatsResponse.ok && paymentsResponse.ok) {
-        const flatsData = await flatsResponse.json();
-        const paymentsData = await paymentsResponse.json();
-        setFlats(flatsData);
-        setPayments(paymentsData);
-      } else {
-        setError('Failed to fetch data');
-      }
-    } catch (error) {
-      setError('Network error occurred');
-    } finally {
-      setLoading(false);
+    if (flatsResponse.ok && paymentsResponse.ok) {
+      const flatsData = await flatsResponse.json();
+      const paymentsData = await paymentsResponse.json();
+
+      setFlats(flatsData);
+      setPayments(paymentsData);
+
+const groupsFromFlats = generateGroups(flatsData);
+setGroups(groupsFromFlats);
+
+    } else {
+      setError('Failed to fetch data');
     }
-  };
+  } catch (error) {
+    setError('Network error occurred');
+  } finally {
+    setLoading(false);
+  }
+};
+const generateGroups = (flatsList) => {
+  const sortedFlats = flatsList
+    .map(f => f.flatNumber)
+    .sort((a, b) => parseInt(a) - parseInt(b));
 
-  // DFS Algorithm for grouping flats
-  const findConnectedGroups = () => {
-    const visited = new Set();
-    const groups = [];
+  const groups = [];
 
-    const dfs = (flatNumber, currentGroup) => {
-      if (visited.has(flatNumber)) return;
-      visited.add(flatNumber);
-      currentGroup.push(flatNumber);
+  for (let i = 0; i < sortedFlats.length; i += 3) {
+    const group = sortedFlats.slice(i, i + 3);
+    groups.push(group);
+  }
 
-      const neighbors = flatGraph[flatNumber] || [];
-      neighbors.forEach(neighbor => {
-        if (!visited.has(neighbor)) {
-          dfs(neighbor, currentGroup);
-        }
-      });
-    };
-
-    Object.keys(flatGraph).forEach(flatNumber => {
-      if (!visited.has(flatNumber)) {
-        const group = [];
-        dfs(flatNumber, group);
-        groups.push(group);
-      }
-    });
-
-    return groups;
-  };
-
-  const groups = findConnectedGroups();
-
+  return groups;
+};
   const getPaymentStatus = (flatNumber) => {
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
@@ -232,7 +219,7 @@ const Dashboard = () => {
         {/* Group Stats - Only show for admin */}
         {isAdmin() && (
           <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Group Statistics (DFS Algorithm)</h2>
+            <h2 className="text-xl font-bold text-gray-800 mb-4">Group Statistics</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {groups.map((group, index) => {
                 const groupPaid = group.filter(flatNumber => getPaymentStatus(flatNumber)).length;
@@ -253,56 +240,56 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Flats List */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-800">
-              {isAdmin() ? `Flats (${filteredFlats.length})` : 'Your Flat Details'}
-            </h2>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Flat No.</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Owner Name</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Contact</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Status</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-              {filteredFlats
-  .filter(flat => flat.ownerName !== user?.username) 
-  .map((flat) => (
-                  <tr key={flat.flatNumber} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm font-medium text-gray-800">{flat.flatNumber}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{flat.ownerName}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{flat.contact}</td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        getPaymentStatus(flat.flatNumber)
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {getPaymentStatus(flat.flatNumber) ? 'Paid' : 'Due'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <Link
-                        to={`/flat/${flat.flatNumber}`}
-                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                      >
-                        View Details
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+       {/* Flats List */}
+{isAdmin() ? (
+  <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+    <div className="p-6 border-b border-gray-200">
+      <h2 className="text-xl font-bold text-gray-800">
+        Flats ({filteredFlats.length})
+      </h2>
+    </div>
+
+    <div className="overflow-x-auto">
+      <table className="w-full">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Flat No.</th>
+            <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Owner Name</th>
+            <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Contact</th>
+            <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Status</th>
+            <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-200">
+          {filteredFlats.map((flat) => (
+            <tr key={flat.flatNumber} className="hover:bg-gray-50">
+              <td className="px-6 py-4 text-sm font-medium text-gray-800">{flat.flatNumber}</td>
+              <td className="px-6 py-4 text-sm text-gray-600">{flat.ownerName}</td>
+              <td className="px-6 py-4 text-sm text-gray-600">{flat.contact}</td>
+              <td className="px-6 py-4">
+                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                  getPaymentStatus(flat.flatNumber)
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
+                }`}>
+                  {getPaymentStatus(flat.flatNumber) ? 'Paid' : 'Due'}
+                </span>
+              </td>
+              <td className="px-6 py-4">
+                <Link
+                  to={`/flat/${flat.flatNumber}`}
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                >
+                  View Details
+                </Link>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+) : null}
       </div>
     </div>
   );
