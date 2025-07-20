@@ -25,10 +25,7 @@ const token = localStorage.getItem('token');
 useEffect(() => {
   const fetchFlats = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/flats/available`, {
-  headers: {
-    Authorization: `Bearer ${token}`
-  } }); 
+      const response = await fetch(`${API_BASE_URL}/flats/available`);
       if (response.ok) {
         const data = await response.json();
         setFlats(data);
