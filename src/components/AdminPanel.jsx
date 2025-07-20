@@ -1,20 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Shield, ToggleLeft, ToggleRight, Plus, Database } from 'lucide-react';
+import { Users, Shield, ToggleLeft, ToggleRight, Plus, Database, Calendar, TrendingUp, CreditCard } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Header from './Header';
 import { Link } from 'react-router-dom';
 
 const AdminPanel = () => {
   const [users, setUsers] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState('');
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [seedLoading, setSeedLoading] = useState(false);
   
   const { getAuthHeaders, API_BASE_URL } = useAuth();
 
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
   useEffect(() => {
     fetchUsers();
+    fetchPayments();
   }, []);
+
+  useEffect(() => {
+    if (selectedMonth || selectedYear) {
+      fetchPayments();
+    }
+  }, [selectedMonth, selectedYear]);
 
   const fetchUsers = async () => {
     try {
@@ -35,6 +50,36 @@ const AdminPanel = () => {
       setError('Network error occurred');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPayments = async () => {
+    try {
+      let url = `${API_BASE_URL}/payments`;
+      const params = new URLSearchParams();
+      
+      if (selectedMonth) params.append('month', selectedMonth);
+      if (selectedYear) params.append('year', selectedYear);
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setPayments(data);
+      } else {
+        setError('Failed to fetch payments');
+      }
+    } catch (error) {
+      setError('Network error occurred');
     }
   };
 
@@ -90,6 +135,18 @@ const AdminPanel = () => {
       setSeedLoading(false);
     }
   };
+
+  const getPaymentStats = () => {
+    const totalAmount = payments.reduce((sum, payment) => sum + payment.amount, 0);
+    const uniqueFlats = new Set(payments.map(p => p.flatNumber)).size;
+    return {
+      totalPayments: payments.length,
+      totalAmount,
+      uniqueFlats
+    };
+  };
+
+  const paymentStats = getPaymentStats();
 
   if (loading) {
     return (
@@ -151,7 +208,7 @@ const AdminPanel = () => {
         )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow-sm p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -190,6 +247,117 @@ const AdminPanel = () => {
                 <Shield className="w-6 h-6 text-purple-600" />
               </div>
             </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm">Total Collection</p>
+                <p className="text-2xl font-bold text-green-600">₹{paymentStats.totalAmount.toLocaleString()}</p>
+              </div>
+              <div className="bg-green-100 rounded-full p-3">
+                <TrendingUp className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Payment History Section */}
+        <div className="bg-white rounded-xl shadow-sm mb-8">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center space-x-3 mb-4 md:mb-0">
+                <div className="bg-green-100 rounded-full p-2">
+                  <Calendar className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800">Payment History</h2>
+                  <p className="text-gray-600">Filter payments by month and year</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">All Months</option>
+                  {months.map(month => (
+                    <option key={month} value={month}>{month}</option>
+                  ))}
+                </select>
+                
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {[2024, 2023, 2022, 2021, 2020].map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Payment Stats */}
+          <div className="p-6 bg-gray-50 border-b border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-blue-600">{paymentStats.totalPayments}</p>
+                <p className="text-gray-600 text-sm">Total Payments</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-green-600">₹{paymentStats.totalAmount.toLocaleString()}</p>
+                <p className="text-gray-600 text-sm">Total Amount</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-purple-600">{paymentStats.uniqueFlats}</p>
+                <p className="text-gray-600 text-sm">Flats Paid</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Payments Table */}
+          <div className="overflow-x-auto">
+            {payments.length > 0 ? (
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Flat No.</th>
+                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Month</th>
+                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Year</th>
+                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Amount</th>
+                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Payment Mode</th>
+                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Paid On</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {payments.map((payment) => (
+                    <tr key={payment._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 text-sm font-medium text-gray-800">{payment.flatNumber}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{payment.month}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{payment.year}</td>
+                      <td className="px-6 py-4 text-sm font-medium text-green-600">₹{payment.amount.toLocaleString()}</td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                          {payment.paymentMode}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {new Date(payment.paidOn).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="p-8 text-center text-gray-500">
+                <CreditCard className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p>No payments found for the selected criteria</p>
+              </div>
+            )}
           </div>
         </div>
 
