@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Filter, Home, Users, TrendingUp, Plus, Building2 } from 'lucide-react';
+import { Search, Filter, Home, Users, TrendingUp, Plus, Building2, AlertTriangle, Bell, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Header from './Header';
 
@@ -12,6 +12,8 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [groups, setGroups] = useState([]);
+  const [showAlert, setShowAlert] = useState(true);
+  const [overdueMonths, setOverdueMonths] = useState([]);
 
   const { getAuthHeaders, API_BASE_URL, isAdmin, user } = useAuth();
 
@@ -19,6 +21,40 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (!isAdmin() && user?.flatNumber) {
+      checkOverduePayments();
+    }
+  }, [payments, user]);
+
+  const checkOverduePayments = () => {
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                       'July', 'August', 'September', 'October', 'November', 'December'];
+    
+    const overdue = [];
+    
+    // Check last 3 months including current month
+    for (let i = 0; i < 3; i++) {
+      const checkMonth = (currentMonth - i + 12) % 12;
+      const checkYear = checkMonth > currentMonth ? currentYear - 1 : currentYear;
+      const monthName = monthNames[checkMonth];
+      
+      const hasPaid = payments.some(p => 
+        p.flatNumber === user.flatNumber && 
+        p.month === monthName && 
+        p.year === checkYear
+      );
+      
+      if (!hasPaid) {
+        overdue.push({ month: monthName, year: checkYear });
+      }
+    }
+    
+    setOverdueMonths(overdue);
+  };
   const fetchData = async () => {
   try {
     const [flatsResponse, paymentsResponse] = await Promise.all([
@@ -118,6 +154,50 @@ const generateGroups = (flatsList) => {
 
         {/* Header */}
         <div className="bg-white rounded-2xl shadow-sm p-6 mb-8">
+          {/* Alert for Flat Owners */}
+          {!isAdmin() && overdueMonths.length > 0 && showAlert && (
+            <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start space-x-3">
+                  <div className="bg-red-100 rounded-full p-2">
+                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-red-800 mb-2">Payment Due Alert</h3>
+                    <p className="text-red-700 mb-3">
+                      You have pending maintenance payments for the following months:
+                    </p>
+                    <div className="space-y-1">
+                      {overdueMonths.map((overdue, index) => (
+                        <div key={index} className="flex items-center space-x-2">
+                          <Bell className="w-4 h-4 text-red-600" />
+                          <span className="text-red-700 font-medium">
+                            {overdue.month} {overdue.year} - ₹1,500
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-4">
+                      <Link 
+                        to="/add-payment"
+                        className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors inline-flex items-center space-x-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Pay Now</span>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowAlert(false)}
+                  className="text-red-400 hover:text-red-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="bg-blue-100 rounded-full p-3">
