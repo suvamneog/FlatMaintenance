@@ -1,15 +1,21 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { Home, Plus, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const AdminAddFlat = () => {
   const [flatNumber, setFlatNumber] = useState('');
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState({ text: '', type: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { token, API_BASE_URL } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setMessage({ text: '', type: '' });
+
     try {
-     const res = await fetch(`${API_BASE_URL}/flats`, {
+      const res = await fetch(`${API_BASE_URL}/flats`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -20,36 +26,128 @@ const AdminAddFlat = () => {
 
       const data = await res.json();
       if (res.ok) {
-        setMessage('Flat added successfully');
+        setMessage({ 
+          text: `Flat ${flatNumber} added successfully!`, 
+          type: 'success' 
+        });
         setFlatNumber('');
       } else {
-        setMessage(data.message || 'Error adding flat');
+        setMessage({ 
+          text: data.message || 'Error adding flat', 
+          type: 'error' 
+        });
       }
     } catch (err) {
-      setMessage('Server error');
+      setMessage({ 
+        text: 'Network error. Please try again.', 
+        type: 'error' 
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="p-6 max-w-md mx-auto bg-white rounded shadow">
-      <h2 className="text-xl font-bold mb-4">Add New Flat</h2>
-      {message && <p className="mb-4 text-sm text-blue-600">{message}</p>}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="text"
-          placeholder="Flat Number"
-          value={flatNumber}
-          onChange={(e) => setFlatNumber(e.target.value)}
-          className="w-full border p-2 rounded"
-          required
-        />
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-        >
-          Add Flat
-        </button>
-      </form>
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+      <div className="max-w-md mx-auto">
+        {/* Header with back button */}
+        <div className="flex items-center mb-6">
+          <Link 
+            to="/admin" 
+            className="mr-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 text-gray-600" />
+          </Link>
+          <h1 className="text-2xl font-bold text-gray-800">Add New Flat</h1>
+        </div>
+
+        {/* Form Card */}
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          {/* Card Header */}
+          <div className="bg-blue-50 p-6 border-b border-blue-100">
+            <div className="flex items-center space-x-3">
+              <div className="bg-blue-100 rounded-full p-3">
+                <Home className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800">Register New Flat</h2>
+                <p className="text-sm text-gray-600">Add a new flat to the system</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Message Alert */}
+          {message.text && (
+            <div className={`px-6 pt-4 ${message.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+              <p className="text-sm font-medium">{message.text}</p>
+            </div>
+          )}
+
+          {/* Form Content */}
+          <div className="p-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label htmlFor="flatNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                  Flat Number
+                </label>
+                <input
+                  id="flatNumber"
+                  type="text"
+                  placeholder="e.g., A101, B203, etc."
+                  value={flatNumber}
+                  onChange={(e) => {
+                    setFlatNumber(e.target.value);
+                    setMessage({ text: '', type: '' });
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  required
+                  autoFocus
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Enter the unique flat number/identifier
+                </p>
+              </div>
+
+              <div>
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !flatNumber.trim()}
+                  className={`w-full flex items-center justify-center px-4 py-3 rounded-lg font-medium transition-colors ${
+                    isSubmitting
+                      ? 'bg-blue-400 cursor-not-allowed'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  } text-white`}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Flat
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        {/* Additional Help Text */}
+        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+          <h3 className="text-sm font-medium text-blue-800 mb-2">Tips for adding flats:</h3>
+          <ul className="text-xs text-blue-700 space-y-1">
+            <li>• Use a consistent numbering system (e.g., A101, A102, B201)</li>
+            <li>• Avoid special characters in flat numbers</li>
+            <li>• Check for duplicates before adding new flats</li>
+          </ul>
+        </div>
+      </div>
     </div>
   );
 };

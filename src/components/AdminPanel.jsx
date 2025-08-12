@@ -1,35 +1,83 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Shield, ToggleLeft, ToggleRight, Plus, Database } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Search, Filter, Home, Users, TrendingUp, Plus, Building2, AlertTriangle, Bell, X, CreditCard, Calendar, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Header from './Header';
-import { Link } from 'react-router-dom';
 
-const AdminPanel = () => {
-  const [users, setUsers] = useState([]);
+const Dashboard = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  const [flats, setFlats] = useState([]);
+  const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [seedLoading, setSeedLoading] = useState(false);
-  
-  const { getAuthHeaders, API_BASE_URL } = useAuth();
+  const [groups, setGroups] = useState([]);
+  const [showAlert, setShowAlert] = useState(true);
+  const [overdueMonths, setOverdueMonths] = useState([]);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [showAllPayments, setShowAllPayments] = useState(false);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [sortConfig, setSortConfig] = useState({ key: 'paidOn', direction: 'desc' });
+
+  const { getAuthHeaders, API_BASE_URL, isAdmin, user } = useAuth();
 
   useEffect(() => {
-    fetchUsers();
+    fetchData();
   }, []);
 
-  const fetchUsers = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/admin/users`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
-        }
-      });
+  useEffect(() => {
+    if (!isAdmin() && user?.flatNumber) {
+      checkOverduePayments();
+    }
+  }, [payments, user]);
 
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(data);
+  const checkOverduePayments = () => {
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                       'July', 'August', 'September', 'October', 'November', 'December'];
+    
+    const overdue = [];
+    
+    for (let i = 0; i < 3; i++) {
+      const checkMonth = (currentMonth - i + 12) % 12;
+      const checkYear = checkMonth > currentMonth ? currentYear - 1 : currentYear;
+      const monthName = monthNames[checkMonth];
+      
+      const hasPaid = payments.some(p => 
+        p.flatNumber === user.flatNumber && 
+        p.month === monthName && 
+        p.year === checkYear
+      );
+      
+      if (!hasPaid) {
+        overdue.push({ month: monthName, year: checkYear });
+      }
+    }
+    
+    setOverdueMonths(overdue);
+  };
+
+  const fetchData = async () => {
+    try {
+      const [flatsResponse, paymentsResponse] = await Promise.all([
+        fetch(`${API_BASE_URL}/flats`, { headers: getAuthHeaders() }),
+        fetch(`${API_BASE_URL}/payments`, { headers: getAuthHeaders() })
+      ]);
+
+      if (flatsResponse.ok && paymentsResponse.ok) {
+        const flatsData = await flatsResponse.json();
+        const paymentsData = await paymentsResponse.json();
+
+        setFlats(flatsData);
+        setPayments(paymentsData);
+        if (isAdmin()) {
+          const groupsFromFlats = generateGroups(flatsData);
+          setGroups(groupsFromFlats);
+        }
       } else {
-        setError('Failed to fetch users');
+        setError('Failed to fetch data');
       }
     } catch (error) {
       setError('Network error occurred');
@@ -38,58 +86,82 @@ const AdminPanel = () => {
     }
   };
 
- const toggleUserStatus = async (userId) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/toggle`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeaders()
-      }
-    });
+  const generateGroups = (flatsList) => {
+    const sortedFlats = flatsList
+      .map(f => f.flatNumber)
+      .sort((a, b) => parseInt(a) - parseInt(b));
 
-    const data = await response.json();
+    const groups = [];
 
-    if (response.ok) {
-      setUsers(users.map(user =>
-        user._id === userId ? data.user : user
-      ));
-      setError(''); // clear previous error
-    } else {
-      setError(data.message || 'Failed to update user status');
+    for (let i = 0; i < sortedFlats.length; i += 3) {
+      const group = sortedFlats.slice(i, i + 3);
+      groups.push(group);
     }
-  } catch (error) {
-    setError('Network error occurred');
-  }
-};
 
-  const seedDatabase = async () => {
-    setSeedLoading(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/seed`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        alert('Database seeded successfully!\n\n' + 
-              'Admin: admin / admin123\n' + 
-              'User: rajesh101 / password123');
-        fetchUsers(); // Refresh users list
-      } else {
-        const data = await response.json();
-        setError(data.message || 'Failed to seed database');
-      }
-    } catch (error) {
-      setError('Network error occurred');
-    } finally {
-      setSeedLoading(false);
-    }
+    return groups;
   };
+
+  const getPaymentStatus = (flatNumber) => {
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                       'July', 'August', 'September', 'October', 'November', 'December'];
+    
+    return payments.some(p => 
+      p.flatNumber === flatNumber && 
+      p.month === monthNames[currentMonth] && 
+      p.year === currentYear
+    );
+  };
+
+  // Get unique years from payments for the filter dropdown
+  const paymentYears = [...new Set(payments.map(p => p.year))].sort((a, b) => b - a);
+
+  // Sort payments function
+  const sortedPayments = [...payments].sort((a, b) => {
+    if (sortConfig.key === 'paidOn') {
+      return sortConfig.direction === 'asc' 
+        ? new Date(a.paidOn) - new Date(b.paidOn)
+        : new Date(b.paidOn) - new Date(a.paidOn);
+    } else {
+      if (a[sortConfig.key] < b[sortConfig.key]) {
+        return sortConfig.direction === 'asc' ? -1 : 1;
+      }
+      if (a[sortConfig.key] > b[sortConfig.key]) {
+        return sortConfig.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    }
+  });
+
+  // Filter payments by selected year
+  const filteredPayments = sortedPayments.filter(payment => 
+    selectedYear === 'all' || payment.year === selectedYear
+  );
+
+  // Function to handle sorting
+  const requestSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const filteredFlats = flats.filter(flat => {
+    const matchesSearch = flat.flatNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         flat.ownerName.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (filterType === 'all') return matchesSearch;
+    if (filterType === 'due') return matchesSearch && !getPaymentStatus(flat.flatNumber);
+    if (filterType === 'paid') return matchesSearch && getPaymentStatus(flat.flatNumber);
+    
+    return matchesSearch;
+  });
+
+  const totalFlats = flats.length;
+  const paidFlats = flats.filter(flat => getPaymentStatus(flat.flatNumber)).length;
+  const dueFlats = totalFlats - paidFlats;
 
   if (loading) {
     return (
@@ -98,7 +170,7 @@ const AdminPanel = () => {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading users...</p>
+            <p className="text-gray-600">Loading dashboard...</p>
           </div>
         </div>
       </div>
@@ -109,165 +181,504 @@ const AdminPanel = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <div className="max-w-7xl mx-auto p-6">
-        {/* Header */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 mb-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="bg-purple-100 rounded-full p-3">
-                <Shield className="w-8 h-8 text-purple-600" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-800">Admin Panel</h1>
-                <p className="text-gray-600">Manage users and system settings</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-  <Link
-    to="/admin/add-flat"
-    className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-  >
-    <Plus className="w-5 h-5" />
-    <span>Add Flat</span>
-  </Link>
-    <button
-  onClick={seedDatabase}
-  disabled={seedLoading}
-  className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
->
-  <Database className="w-5 h-5" />
-  <span>{seedLoading ? 'Seeding...' : 'Seed Database'}</span>
-</button>
-
- 
-</div>
-          </div>
-        </div>
-
+      <div className="max-w-7xl mx-auto p-4 md:p-6">
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-600">{error}</p>
           </div>
         )}
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm">Total Users</p>
-                <p className="text-3xl font-bold text-gray-800">{users.length}</p>
-              </div>
-              <div className="bg-blue-100 rounded-full p-3">
-                <Users className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm">Active Users</p>
-                <p className="text-3xl font-bold text-green-600">
-                  {users.filter(user => user.isActive).length}
-                </p>
-              </div>
-              <div className="bg-green-100 rounded-full p-3">
-                <Users className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm">Administrators</p>
-                <p className="text-3xl font-bold text-purple-600">
-                  {users.filter(user => user.role === 'admin').length}
-                </p>
-              </div>
-              <div className="bg-purple-100 rounded-full p-3">
-                <Shield className="w-6 h-6 text-purple-600" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Users Table */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-800">User Management</h2>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">User</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Role</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Flat</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Status</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Joined</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {users.map((user) => (
-                  <tr key={user._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div>
-                        <div className="text-sm font-medium text-gray-800">{user.username}</div>
-                        <div className="text-sm text-gray-600">{user.email}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        user.role === 'admin'
-                          ? 'bg-purple-100 text-purple-800'
-                          : 'bg-blue-100 text-blue-800'
-                      }`}>
-                        {user.role}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {user.flatNumber || '-'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        user.isActive
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {user.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {new Date(user.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => toggleUserStatus(user._id)}
-                        className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 transition-colors"
+        {/* Payment Due Banner for Users */}
+        {!isAdmin() && overdueMonths.length > 0 && showAlert && (
+          <div className="mb-6 bg-red-50 border-l-4 border-red-400 rounded-lg p-4">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <AlertTriangle className="h-5 w-5 text-red-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-medium text-red-800">Payment Due Alert</h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    <p>
+                      You have pending maintenance payments for:
+                    </p>
+                    <ul className="list-disc pl-5 space-y-1 mt-2">
+                      {overdueMonths.map((overdue, index) => (
+                        <li key={index}>
+                          {overdue.month} {overdue.year} - ₹1,500
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="mt-4">
+                    <div className="-mx-2 -my-1.5 flex">
+                      <Link
+                        to="/add-payment"
+                        className="bg-red-600 px-3 py-2 rounded-md text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                       >
-                        {user.isActive ? (
-                          <ToggleRight className="w-5 h-5" />
-                        ) : (
-                          <ToggleLeft className="w-5 h-5" />
-                        )}
-                        <span className="text-sm">
-                          {user.isActive ? 'Deactivate' : 'Activate'}
-                        </span>
+                        Pay Now
+                      </Link>
+                      <button
+                        onClick={() => setShowAlert(false)}
+                        className="ml-3 bg-red-50 px-3 py-2 rounded-md text-sm font-medium text-red-800 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      >
+                        Dismiss
                       </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Header */}
+        <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center space-x-3">
+              <div className="bg-blue-100 rounded-full p-3">
+                <Building2 className="w-8 h-8 text-blue-600" />
+              </div>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+                  {isAdmin() ? 'Maintenance Dashboard' : `Welcome, ${user?.username}`}
+                </h1>
+                <p className="text-gray-600">
+                  {isAdmin() ? 'Manage apartment maintenance payments' : `Flat ${user?.flatNumber} - Payment Overview`}
+                </p>
+              </div>
+            </div>
+            
+            {/* Admin-only Quick Actions */}
+            {isAdmin() && (
+              <div className="flex flex-wrap gap-2">
+                <Link 
+                  to="/add-payment"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 text-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Payment</span>
+                </Link>
+                <Link 
+                  to="/admin/add-flat"
+                  className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2 text-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Flat</span>
+                </Link>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* User Stats View */}
+        {!isAdmin() && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm">Your Flat</p>
+                  <p className="text-2xl font-bold text-gray-800">{user?.flatNumber}</p>
+                </div>
+                <div className="bg-blue-100 rounded-full p-3">
+                  <Home className="w-5 h-5 text-blue-600" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm">Current Status</p>
+                  <p className={`text-2xl font-bold ${
+                    getPaymentStatus(user?.flatNumber) ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {getPaymentStatus(user?.flatNumber) ? 'Paid' : 'Due'}
+                  </p>
+                </div>
+                <div className={`rounded-full p-3 ${
+                  getPaymentStatus(user?.flatNumber) ? 'bg-green-100' : 'bg-red-100'
+                }`}>
+                  {getPaymentStatus(user?.flatNumber) ? (
+                    <TrendingUp className="w-5 h-5 text-green-600" />
+                  ) : (
+                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="col-span-full">
+              <Link
+                to="/add-payment"
+                className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
+              >
+                <CreditCard className="w-5 h-5" />
+                <span>Make Payment</span>
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Admin Tabs and Content */}
+        {isAdmin() && (
+          <>
+            {/* Navigation Tabs */}
+            <div className="mb-6 border-b border-gray-200">
+              <nav className="flex space-x-4">
+                <button
+                  onClick={() => setActiveTab('overview')}
+                  className={`py-3 px-1 border-b-2 font-medium text-sm ${activeTab === 'overview' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                >
+                  Overview
+                </button>
+                <button
+                  onClick={() => setActiveTab('flats')}
+                  className={`py-3 px-1 border-b-2 font-medium text-sm ${activeTab === 'flats' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                >
+                  Flats Management
+                </button>
+                <button
+                  onClick={() => setActiveTab('payments')}
+                  className={`py-3 px-1 border-b-2 font-medium text-sm ${activeTab === 'payments' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                >
+                  Payments
+                </button>
+              </nav>
+            </div>
+
+            {/* Overview Tab */}
+            {activeTab === 'overview' && (
+              <div className="space-y-6">
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-gray-600 text-sm">Total Flats</p>
+                        <p className="text-2xl font-bold text-gray-800">{totalFlats}</p>
+                        <p className="text-xs text-gray-500 mt-1">Registered in system</p>
+                      </div>
+                      <div className="bg-blue-100 rounded-full p-3">
+                        <Home className="w-5 h-5 text-blue-600" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-gray-600 text-sm">Paid This Month</p>
+                        <p className="text-2xl font-bold text-green-600">{paidFlats}</p>
+                        <p className="text-xs text-gray-500 mt-1">{Math.round((paidFlats/totalFlats)*100)}% completion</p>
+                      </div>
+                      <div className="bg-green-100 rounded-full p-3">
+                        <TrendingUp className="w-5 h-5 text-green-600" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-gray-600 text-sm">Pending Dues</p>
+                        <p className="text-2xl font-bold text-red-600">{dueFlats}</p>
+                        <p className="text-xs text-gray-500 mt-1">Need follow up</p>
+                      </div>
+                      <div className="bg-red-100 rounded-full p-3">
+                        <AlertTriangle className="w-5 h-5 text-red-600" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Group Stats */}
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-gray-800">Group Statistics</h2>
+                    <span className="text-sm text-gray-500">3 flats per group</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {groups.map((group, index) => {
+                      const groupPaid = group.filter(flatNumber => getPaymentStatus(flatNumber)).length;
+                      const groupDue = group.length - groupPaid;
+                      
+                      return (
+                        <div key={index} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-semibold text-gray-800">Group {index + 1}</h3>
+                            <span className={`text-xs px-2 py-1 rounded-full ${
+                              groupDue === 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {groupDue === 0 ? 'Complete' : `${groupDue} pending`}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-3">Flats: {group.join(', ')}</p>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-green-600 h-2 rounded-full" 
+                              style={{ width: `${(groupPaid/group.length)*100}%` }}
+                            ></div>
+                          </div>
+                          <div className="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>Paid: {groupPaid}</span>
+                            <span>Due: {groupDue}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Flats Management Tab */}
+            {activeTab === 'flats' && (
+              <div className="space-y-6">
+                {/* Search and Filter */}
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div className="relative flex-1 max-w-md">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search className="w-5 h-5 text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Search by flat number or owner name..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <Filter className="w-5 h-5 text-gray-400" />
+                      <select
+                        value={filterType}
+                        onChange={(e) => setFilterType(e.target.value)}
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="all">All Flats</option>
+                        <option value="paid">Paid This Month</option>
+                        <option value="due">Pending Dues</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Flats List */}
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                  <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                    <h2 className="text-lg font-bold text-gray-800">
+                      Flats ({filteredFlats.length})
+                    </h2>
+                    <span className="text-sm text-gray-500">
+                      Showing {Math.min(filteredFlats.length, 10)} of {filteredFlats.length}
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flat No.</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {filteredFlats.slice(0, 10).map((flat) => (
+                          <tr key={flat.flatNumber} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm font-medium text-gray-800">
+                              <div className="flex items-center">
+                                <Home className="w-4 h-4 mr-2 text-gray-400" />
+                                {flat.flatNumber}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">{flat.ownerName || 'Unassigned'}</td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                getPaymentStatus(flat.flatNumber)
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {getPaymentStatus(flat.flatNumber) ? 'Paid' : 'Due'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              <Link
+                                to={`/flat/${flat.flatNumber}`}
+                                className="text-blue-600 hover:text-blue-800 font-medium flex items-center"
+                              >
+                                <FileText className="w-4 h-4 mr-1" />
+                                Details
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {filteredFlats.length === 0 && (
+                    <div className="p-8 text-center text-gray-500">
+                      <Home className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                      <p>No flats found matching your criteria</p>
+                    </div>
+                  )}
+
+                  {filteredFlats.length > 10 && (
+                    <div className="px-4 py-3 border-t border-gray-200 text-right">
+                      <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        View All ({filteredFlats.length})
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+           {/* Payments Tab */}
+{activeTab === 'payments' && (
+  <div className="bg-white rounded-xl shadow-sm p-6">
+    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+      <h2 className="text-xl font-bold text-gray-800">Payment History</h2>
+      
+      <div className="flex items-center gap-4">
+        <div className="flex items-center space-x-2">
+          <label htmlFor="year-filter" className="text-sm text-gray-600">Filter by Year:</label>
+          <select
+            id="year-filter"
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+          >
+            <option value="all">All Years</option>
+            {paymentYears.map(year => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div className="overflow-x-auto">
+      <table className="w-full">
+        <thead className="bg-gray-50">
+          <tr>
+            <th 
+              className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+              onClick={() => requestSort('paidOn')}
+            >
+              <div className="flex items-center">
+                Date
+                {sortConfig.key === 'paidOn' && (
+                  sortConfig.direction === 'asc' ? 
+                  <ChevronUp className="ml-1 w-4 h-4" /> : 
+                  <ChevronDown className="ml-1 w-4 h-4" />
+                )}
+              </div>
+            </th>
+            <th 
+              className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+              onClick={() => requestSort('flatNumber')}
+            >
+              <div className="flex items-center">
+                Flat No.
+                {sortConfig.key === 'flatNumber' && (
+                  sortConfig.direction === 'asc' ? 
+                  <ChevronUp className="ml-1 w-4 h-4" /> : 
+                  <ChevronDown className="ml-1 w-4 h-4" />
+                )}
+              </div>
+            </th>
+            <th 
+              className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+              onClick={() => requestSort('amount')}
+            >
+              <div className="flex items-center">
+                Amount
+                {sortConfig.key === 'amount' && (
+                  sortConfig.direction === 'asc' ? 
+                  <ChevronUp className="ml-1 w-4 h-4" /> : 
+                  <ChevronDown className="ml-1 w-4 h-4" />
+                )}
+              </div>
+            </th>
+            <th 
+              className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+              onClick={() => requestSort('month')}
+            >
+              <div className="flex items-center">
+                Month
+                {sortConfig.key === 'month' && (
+                  sortConfig.direction === 'asc' ? 
+                  <ChevronUp className="ml-1 w-4 h-4" /> : 
+                  <ChevronDown className="ml-1 w-4 h-4" />
+                )}
+              </div>
+            </th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Payment Mode
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-200">
+          {(showAllPayments ? filteredPayments : filteredPayments.slice(0, 5)).map((payment) => (
+            <tr key={payment._id} className="hover:bg-gray-50">
+              <td className="px-4 py-3 text-sm text-gray-600">
+                {new Date(payment.paidOn).toLocaleDateString()}
+              </td>
+              <td className="px-4 py-3 text-sm font-medium text-gray-800">{payment.flatNumber}</td>
+              <td className="px-4 py-3 text-sm font-medium text-green-600">₹{payment.amount.toLocaleString()}</td>
+              <td className="px-4 py-3 text-sm text-gray-600">{payment.month} {payment.year}</td>
+              <td className="px-4 py-3">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  {payment.paymentMode}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    {filteredPayments.length === 0 && (
+      <div className="p-8 text-center text-gray-500">
+        <CreditCard className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+        <p>No payment records found for selected year</p>
+      </div>
+    )}
+
+    {!showAllPayments && filteredPayments.length > 5 && (
+      <div className="mt-4 text-center">
+        <button 
+          onClick={() => setShowAllPayments(true)}
+          className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center justify-center w-full"
+        >
+          View All {filteredPayments.length} Payments <ChevronDown className="ml-1 w-4 h-4" />
+        </button>
+      </div>
+    )}
+
+    {showAllPayments && (
+      <div className="mt-4 text-center">
+        <button 
+          onClick={() => setShowAllPayments(false)}
+          className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center justify-center w-full"
+        >
+          Show Less <ChevronUp className="ml-1 w-4 h-4" />
+        </button>
+      </div>
+    )}
+  </div>
+)}
+          </>
+        )}
       </div>
     </div>
   );
 };
 
-export default AdminPanel;
+export default Dashboard;
