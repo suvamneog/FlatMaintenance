@@ -506,7 +506,24 @@ const Dashboard = () => {
             {/* Payments Tab */}
             {activeTab === 'payments' && (
               <div className="bg-white rounded-xl shadow-sm p-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">Recent Payments</h2>
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                  <h2 className="text-xl font-bold text-gray-800">Payment History</h2>
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center space-x-2">
+                      <label htmlFor="search-payments" className="text-sm text-gray-600">Search:</label>
+                      <input
+                        id="search-payments"
+                        type="text"
+                        placeholder="Search by flat number..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm w-48"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-gray-50">
@@ -515,10 +532,18 @@ const Dashboard = () => {
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flat No.</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Mode</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {payments.slice(0, 5).map((payment) => (
+                      {payments
+                        .filter(payment => 
+                          searchTerm === '' || 
+                          payment.flatNumber.toLowerCase().includes(searchTerm.toLowerCase())
+                        )
+                        .slice(0, 10)
+                        .map((payment) => (
                         <tr key={payment._id} className="hover:bg-gray-50">
                           <td className="px-4 py-3 text-sm text-gray-600">
                             {new Date(payment.paidOn).toLocaleDateString()}
@@ -526,26 +551,105 @@ const Dashboard = () => {
                           <td className="px-4 py-3 text-sm font-medium text-gray-800">{payment.flatNumber}</td>
                           <td className="px-4 py-3 text-sm font-medium text-green-600">₹{payment.amount.toLocaleString()}</td>
                           <td className="px-4 py-3 text-sm text-gray-600">{payment.month} {payment.year}</td>
+                          <td className="px-4 py-3">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {payment.paymentMode}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            <Link
+                              to={`/flat/${payment.flatNumber}`}
+                              className="text-blue-600 hover:text-blue-800 font-medium flex items-center"
+                            >
+                              <FileText className="w-4 h-4 mr-1" />
+                              View Flat
+                            </Link>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
 
-                {payments.length === 0 && (
+                {payments.filter(payment => 
+                  searchTerm === '' || 
+                  payment.flatNumber.toLowerCase().includes(searchTerm.toLowerCase())
+                ).length === 0 && (
                   <div className="p-8 text-center text-gray-500">
                     <CreditCard className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                     <p>No payment records found</p>
                   </div>
                 )}
 
-                {payments.length > 5 && (
-                  <div className="mt-4 text-right">
-                    <Link to="/payments" className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                      View All Payments →
-                    </Link>
+                {payments.filter(payment => 
+                  searchTerm === '' || 
+                  payment.flatNumber.toLowerCase().includes(searchTerm.toLowerCase())
+                ).length > 10 && (
+                  <div className="mt-4 text-center">
+                    <p className="text-blue-600 text-sm font-medium">
+                      Showing 10 of {payments.filter(payment => 
+                        searchTerm === '' || 
+                        payment.flatNumber.toLowerCase().includes(searchTerm.toLowerCase())
+                      ).length} payments
+                    </p>
                   </div>
                 )}
+
+                {/* Payment Statistics */}
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-800">
+                        {payments.filter(payment => 
+                          searchTerm === '' || 
+                          payment.flatNumber.toLowerCase().includes(searchTerm.toLowerCase())
+                        ).length}
+                      </p>
+                      <p className="text-sm text-gray-600">Total Payments</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-green-600">
+                        ₹{payments
+                          .filter(payment => 
+                            searchTerm === '' || 
+                            payment.flatNumber.toLowerCase().includes(searchTerm.toLowerCase())
+                          )
+                          .reduce((sum, p) => sum + p.amount, 0)
+                          .toLocaleString()}
+                      </p>
+                      <p className="text-sm text-gray-600">Total Amount</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-blue-600">
+                        {[...new Set(payments
+                          .filter(payment => 
+                            searchTerm === '' || 
+                            payment.flatNumber.toLowerCase().includes(searchTerm.toLowerCase())
+                          )
+                          .map(p => p.flatNumber))].length}
+                      </p>
+                      <p className="text-sm text-gray-600">Unique Flats</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-purple-600">
+                        ₹{payments.length > 0 ? 
+                          Math.round(payments
+                            .filter(payment => 
+                              searchTerm === '' || 
+                              payment.flatNumber.toLowerCase().includes(searchTerm.toLowerCase())
+                            )
+                            .reduce((sum, p) => sum + p.amount, 0) / 
+                          payments
+                            .filter(payment => 
+                              searchTerm === '' || 
+                              payment.flatNumber.toLowerCase().includes(searchTerm.toLowerCase())
+                            ).length
+                          ).toLocaleString() : 0}
+                      </p>
+                      <p className="text-sm text-gray-600">Average Payment</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </>
