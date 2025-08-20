@@ -15,6 +15,7 @@ const Dashboard = () => {
   const [showAlert, setShowAlert] = useState(true);
   const [overdueMonths, setOverdueMonths] = useState([]);
   const [activeTab, setActiveTab] = useState('overview');
+  const [flatsToShow, setFlatsToShow] = useState(10);
 
   const { getAuthHeaders, API_BASE_URL, isAdmin, user } = useAuth();
 
@@ -212,26 +213,6 @@ const Dashboard = () => {
                 </p>
               </div>
             </div>
-            
-            {/* Admin-only Quick Actions */}
-            {isAdmin() && (
-              <div className="flex flex-wrap gap-2">
-                <Link 
-                  to="/add-payment"
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 text-sm"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Payment</span>
-                </Link>
-                <Link 
-                  to="/admin/add-flat"
-                  className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2 text-sm"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Flat</span>
-                </Link>
-              </div>
-            )}
           </div>
         </div>
 
@@ -301,12 +282,6 @@ const Dashboard = () => {
                   className={`py-3 px-1 border-b-2 font-medium text-sm ${activeTab === 'flats' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
                 >
                   Flats Management
-                </button>
-                <button
-                  onClick={() => setActiveTab('payments')}
-                  className={`py-3 px-1 border-b-2 font-medium text-sm ${activeTab === 'payments' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-                >
-                  Payments
                 </button>
               </nav>
             </div>
@@ -437,7 +412,7 @@ const Dashboard = () => {
                       Flats ({filteredFlats.length})
                     </h2>
                     <span className="text-sm text-gray-500">
-                      Showing {Math.min(filteredFlats.length, 10)} of {filteredFlats.length}
+                      Showing {Math.min(filteredFlats.length, flatsToShow)} of {filteredFlats.length}
                     </span>
                   </div>
 
@@ -452,7 +427,7 @@ const Dashboard = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
-                        {filteredFlats.slice(0, 10).map((flat) => (
+                        {filteredFlats.slice(0, flatsToShow).map((flat) => (
                           <tr key={flat.flatNumber} className="hover:bg-gray-50">
                             <td className="px-4 py-3 text-sm font-medium text-gray-800">
                               <div className="flex items-center">
@@ -492,60 +467,17 @@ const Dashboard = () => {
                     </div>
                   )}
 
-                  {filteredFlats.length > 10 && (
+                  {filteredFlats.length > flatsToShow && (
                     <div className="px-4 py-3 border-t border-gray-200 text-right">
-                      <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                      <button 
+                        onClick={() => setFlatsToShow(filteredFlats.length)}
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
                         View All ({filteredFlats.length})
                       </button>
                     </div>
                   )}
                 </div>
-              </div>
-            )}
-
-            {/* Payments Tab */}
-            {activeTab === 'payments' && (
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">Recent Payments</h2>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flat No.</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {payments.slice(0, 5).map((payment) => (
-                        <tr key={payment._id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm text-gray-600">
-                            {new Date(payment.paidOn).toLocaleDateString()}
-                          </td>
-                          <td className="px-4 py-3 text-sm font-medium text-gray-800">{payment.flatNumber}</td>
-                          <td className="px-4 py-3 text-sm font-medium text-green-600">₹{payment.amount.toLocaleString()}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600">{payment.month} {payment.year}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {payments.length === 0 && (
-                  <div className="p-8 text-center text-gray-500">
-                    <CreditCard className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p>No payment records found</p>
-                  </div>
-                )}
-
-                {payments.length > 5 && (
-                  <div className="mt-4 text-right">
-                    <Link to="/payments" className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                      View All Payments →
-                    </Link>
-                  </div>
-                )}
               </div>
             )}
           </>
