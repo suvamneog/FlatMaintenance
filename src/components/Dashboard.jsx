@@ -200,15 +200,15 @@ const Dashboard = () => {
         {/* Header */}
         <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex items-center space-x-3">
-              <div className="bg-blue-100 rounded-full p-3">
-                <Building2 className="w-8 h-8 text-blue-600" />
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <div className="bg-blue-100 rounded-full p-2 sm:p-3">
+                <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
               </div>
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+                <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-800">
                   {isAdmin() ? 'Maintenance Dashboard' : `Welcome, ${user?.username}`}
                 </h1>
-                <p className="text-gray-600">
+                <p className="text-sm sm:text-base text-gray-600">
                   {isAdmin() ? 'Manage apartment maintenance payments' : `Flat ${user?.flatNumber} - Payment Overview`}
                 </p>
               </div>
@@ -218,47 +218,47 @@ const Dashboard = () => {
 
         {/* User Stats View */}
         {!isAdmin() && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-600 text-sm">Your Flat</p>
-                  <p className="text-2xl font-bold text-gray-800">{user?.flatNumber}</p>
+                  <p className="text-gray-600 text-xs sm:text-sm">Your Flat</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-800">{user?.flatNumber}</p>
                 </div>
-                <div className="bg-blue-100 rounded-full p-3">
-                  <Home className="w-5 h-5 text-blue-600" />
+                <div className="bg-blue-100 rounded-full p-2 sm:p-3">
+                  <Home className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-600 text-sm">Current Status</p>
-                  <p className={`text-2xl font-bold ${
+                  <p className="text-gray-600 text-xs sm:text-sm">Current Status</p>
+                  <p className={`text-xl sm:text-2xl font-bold ${
                     getPaymentStatus(user?.flatNumber) ? 'text-green-600' : 'text-red-600'
                   }`}>
                     {getPaymentStatus(user?.flatNumber) ? 'Paid' : 'Due'}
                   </p>
                 </div>
-                <div className={`rounded-full p-3 ${
+                <div className={`rounded-full p-2 sm:p-3 ${
                   getPaymentStatus(user?.flatNumber) ? 'bg-green-100' : 'bg-red-100'
                 }`}>
                   {getPaymentStatus(user?.flatNumber) ? (
-                    <TrendingUp className="w-5 h-5 text-green-600" />
+                    <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                   ) : (
-                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                    <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
                   )}
                 </div>
               </div>
             </div>
 
-            <div className="col-span-full">
+            <div className="sm:col-span-2">
               <Link
                 to="/add-payment"
-                className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
+                className="w-full bg-blue-600 text-white py-2.5 sm:py-3 text-sm sm:text-base rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
               >
-                <CreditCard className="w-5 h-5" />
+                <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span>Make Payment</span>
               </Link>
             </div>
@@ -270,16 +270,16 @@ const Dashboard = () => {
           <>
             {/* Navigation Tabs */}
             <div className="mb-6 border-b border-gray-200">
-              <nav className="flex space-x-4">
+              <nav className="flex space-x-2 sm:space-x-4 overflow-x-auto">
                 <button
                   onClick={() => setActiveTab('overview')}
-                  className={`py-3 px-1 border-b-2 font-medium text-sm ${activeTab === 'overview' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                  className={`py-2 sm:py-3 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${activeTab === 'overview' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
                 >
                   Overview
                 </button>
                 <button
                   onClick={() => setActiveTab('flats')}
-                  className={`py-3 px-1 border-b-2 font-medium text-sm ${activeTab === 'flats' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                  className={`py-2 sm:py-3 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${activeTab === 'flats' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
                 >
                   Flats Management
                 </button>
@@ -290,69 +290,69 @@ const Dashboard = () => {
             {activeTab === 'overview' && (
               <div className="space-y-6">
                 {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="bg-white rounded-xl shadow-sm p-4 sm:p-5 hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-gray-600 text-sm">Total Flats</p>
-                        <p className="text-2xl font-bold text-gray-800">{totalFlats}</p>
-                        <p className="text-xs text-gray-500 mt-1">Registered in system</p>
+                        <p className="text-gray-600 text-xs sm:text-sm">Total Flats</p>
+                        <p className="text-xl sm:text-2xl font-bold text-gray-800">{totalFlats}</p>
+                        <p className="text-xs text-gray-500 mt-1 hidden sm:block">Registered in system</p>
                       </div>
-                      <div className="bg-blue-100 rounded-full p-3">
-                        <Home className="w-5 h-5 text-blue-600" />
+                      <div className="bg-blue-100 rounded-full p-2 sm:p-3">
+                        <Home className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
+                  <div className="bg-white rounded-xl shadow-sm p-4 sm:p-5 hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-gray-600 text-sm">Paid This Month</p>
-                        <p className="text-2xl font-bold text-green-600">{paidFlats}</p>
-                        <p className="text-xs text-gray-500 mt-1">{Math.round((paidFlats/totalFlats)*100)}% completion</p>
+                        <p className="text-gray-600 text-xs sm:text-sm">Paid This Month</p>
+                        <p className="text-xl sm:text-2xl font-bold text-green-600">{paidFlats}</p>
+                        <p className="text-xs text-gray-500 mt-1 hidden sm:block">{Math.round((paidFlats/totalFlats)*100)}% completion</p>
                       </div>
-                      <div className="bg-green-100 rounded-full p-3">
-                        <TrendingUp className="w-5 h-5 text-green-600" />
+                      <div className="bg-green-100 rounded-full p-2 sm:p-3">
+                        <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
+                  <div className="bg-white rounded-xl shadow-sm p-4 sm:p-5 hover:shadow-md transition-shadow sm:col-span-2 lg:col-span-1">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-gray-600 text-sm">Pending Dues</p>
-                        <p className="text-2xl font-bold text-red-600">{dueFlats}</p>
-                        <p className="text-xs text-gray-500 mt-1">Need follow up</p>
+                        <p className="text-gray-600 text-xs sm:text-sm">Pending Dues</p>
+                        <p className="text-xl sm:text-2xl font-bold text-red-600">{dueFlats}</p>
+                        <p className="text-xs text-gray-500 mt-1 hidden sm:block">Need follow up</p>
                       </div>
-                      <div className="bg-red-100 rounded-full p-3">
-                        <AlertTriangle className="w-5 h-5 text-red-600" />
+                      <div className="bg-red-100 rounded-full p-2 sm:p-3">
+                        <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Group Stats */}
-                <div className="bg-white rounded-xl shadow-sm p-6">
+                <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-gray-800">Group Statistics</h2>
-                    <span className="text-sm text-gray-500">3 flats per group</span>
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-800">Group Statistics</h2>
+                    <span className="text-xs sm:text-sm text-gray-500 hidden sm:inline">3 flats per group</span>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                     {groups.map((group, index) => {
                       const groupPaid = group.filter(flatNumber => getPaymentStatus(flatNumber)).length;
                       const groupDue = group.length - groupPaid;
                       
                       return (
-                        <div key={index} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div key={index} className="border border-gray-200 rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow">
                           <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-semibold text-gray-800">Group {index + 1}</h3>
+                            <h3 className="text-sm sm:text-base font-semibold text-gray-800">Group {index + 1}</h3>
                             <span className={`text-xs px-2 py-1 rounded-full ${
                               groupDue === 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                             }`}>
                               {groupDue === 0 ? 'Complete' : `${groupDue} pending`}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-600 mb-3">Flats: {group.join(', ')}</p>
+                          <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">Flats: {group.join(', ')}</p>
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div 
                               className="bg-green-600 h-2 rounded-full" 
@@ -375,27 +375,27 @@ const Dashboard = () => {
             {activeTab === 'flats' && (
               <div className="space-y-6">
                 {/* Search and Filter */}
-                <div className="bg-white rounded-xl shadow-sm p-6">
+                <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div className="relative flex-1 max-w-md">
+                    <div className="relative flex-1 max-w-full md:max-w-md">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="w-5 h-5 text-gray-400" />
+                        <Search className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                       </div>
                       <input
                         type="text"
                         placeholder="Search by flat number or owner name..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <Filter className="w-5 h-5 text-gray-400" />
+                      <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                       <select
                         value={filterType}
                         onChange={(e) => setFilterType(e.target.value)}
-                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="px-2 sm:px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="all">All Flats</option>
                         <option value="paid">Paid This Month</option>
@@ -407,11 +407,11 @@ const Dashboard = () => {
 
                 {/* Flats List */}
                 <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                  <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                    <h2 className="text-lg font-bold text-gray-800">
+                  <div className="p-3 sm:p-4 border-b border-gray-200 flex items-center justify-between">
+                    <h2 className="text-base sm:text-lg font-bold text-gray-800">
                       Flats ({filteredFlats.length})
                     </h2>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-xs sm:text-sm text-gray-500 hidden sm:inline">
                       Showing {Math.min(filteredFlats.length, flatsToShow)} of {filteredFlats.length}
                     </span>
                   </div>
@@ -420,23 +420,23 @@ const Dashboard = () => {
                     <table className="w-full">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flat No.</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                          <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flat No.</th>
+                          <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Owner</th>
+                          <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
                         {filteredFlats.slice(0, flatsToShow).map((flat) => (
                           <tr key={flat.flatNumber} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 text-sm font-medium text-gray-800">
+                            <td className="px-3 sm:px-4 py-2 sm:py-3 text-sm font-medium text-gray-800">
                               <div className="flex items-center">
-                                <Home className="w-4 h-4 mr-2 text-gray-400" />
+                                <Home className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 text-gray-400" />
                                 {flat.flatNumber}
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">{flat.ownerName || 'Unassigned'}</td>
-                            <td className="px-4 py-3">
+                            <td className="px-3 sm:px-4 py-2 sm:py-3 text-sm text-gray-600 hidden sm:table-cell">{flat.ownerName || 'Unassigned'}</td>
+                            <td className="px-3 sm:px-4 py-2 sm:py-3">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                 getPaymentStatus(flat.flatNumber)
                                   ? 'bg-green-100 text-green-800'
@@ -445,13 +445,14 @@ const Dashboard = () => {
                                 {getPaymentStatus(flat.flatNumber) ? 'Paid' : 'Due'}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-sm">
+                            <td className="px-3 sm:px-4 py-2 sm:py-3 text-sm">
                               <Link
                                 to={`/flat/${flat.flatNumber}`}
-                                className="text-blue-600 hover:text-blue-800 font-medium flex items-center"
+                                className="text-blue-600 hover:text-blue-800 font-medium flex items-center text-xs sm:text-sm"
                               >
-                                <FileText className="w-4 h-4 mr-1" />
-                                Details
+                                <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                                <span className="hidden sm:inline">Details</span>
+                                <span className="sm:hidden">View</span>
                               </Link>
                             </td>
                           </tr>
@@ -461,17 +462,17 @@ const Dashboard = () => {
                   </div>
 
                   {filteredFlats.length === 0 && (
-                    <div className="p-8 text-center text-gray-500">
-                      <Home className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                    <div className="p-6 sm:p-8 text-center text-gray-500">
+                      <Home className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-4 text-gray-300" />
                       <p>No flats found matching your criteria</p>
                     </div>
                   )}
 
                   {filteredFlats.length > flatsToShow && (
-                    <div className="px-4 py-3 border-t border-gray-200 text-right">
+                    <div className="px-3 sm:px-4 py-3 border-t border-gray-200 text-right">
                       <button 
                         onClick={() => setFlatsToShow(filteredFlats.length)}
-                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm font-medium"
                       >
                         View All ({filteredFlats.length})
                       </button>

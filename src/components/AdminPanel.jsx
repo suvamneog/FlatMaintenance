@@ -314,26 +314,26 @@ const AdminPanel = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6">
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 mb-8">
+        <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 mb-6 sm:mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex items-center space-x-3">
-              <div className="bg-purple-100 rounded-full p-3">
-                <Shield className="w-8 h-8 text-purple-600" />
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <div className="bg-purple-100 rounded-full p-2 sm:p-3">
+                <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-800">Admin Panel</h1>
-                <p className="text-gray-600">Manage users and system settings</p>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800">Admin Panel</h1>
+                <p className="text-sm sm:text-base text-gray-600">Manage users and system settings</p>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2">
               {(activeTab === 'users' || activeTab === 'payments') && (
-                <div className="flex space-x-2">
+                <div className="flex space-x-2 order-2 sm:order-1">
                   <button
                     onClick={exportToCSV}
                     disabled={exportLoading.csv}
-                    className={`flex items-center px-3 py-2 rounded-lg transition-colors text-sm ${
+                    className={`flex items-center justify-center px-2 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
                       exportLoading.csv 
                         ? 'bg-green-400 text-white cursor-not-allowed' 
                         : 'bg-green-600 text-white hover:bg-green-700'
@@ -341,7 +341,7 @@ const AdminPanel = () => {
                   >
                     {exportLoading.csv ? (
                       <>
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin -ml-1 mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
@@ -349,7 +349,7 @@ const AdminPanel = () => {
                       </>
                     ) : (
                       <>
-                        <FileDown className="w-4 h-4 mr-2" />
+                        <FileDown className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                         CSV
                       </>
                     )}
@@ -358,17 +358,17 @@ const AdminPanel = () => {
               )}
               <Link
                 to="/admin/add-flat"
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 text-sm"
+                className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-1 sm:space-x-2 text-xs sm:text-sm order-1 sm:order-2"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span>Add Flat</span>
               </Link>
               <button
                 onClick={seedDatabase}
                 disabled={seedLoading}
-                className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700 transition-colors flex items-center space-x-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-gray-800 text-white px-3 sm:px-4 py-2 rounded hover:bg-gray-700 transition-colors flex items-center justify-center space-x-1 sm:space-x-2 text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed order-3"
               >
-                <Database className="w-4 h-4" />
+                <Database className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span>{seedLoading ? 'Seeding...' : 'Seed DB'}</span>
               </button>
             </div>
@@ -376,29 +376,29 @@ const AdminPanel = () => {
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-600">{error}</p>
           </div>
         )}
 
         {/* Tabs */}
         <div className="mb-6 border-b border-gray-200">
-          <nav className="flex space-x-8">
+          <nav className="flex space-x-4 sm:space-x-8 overflow-x-auto">
             <button
               onClick={() => setActiveTab('dashboard')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'dashboard' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+              className={`py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${activeTab === 'dashboard' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
             >
               Dashboard
             </button>
             <button
               onClick={() => setActiveTab('users')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'users' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+              className={`py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${activeTab === 'users' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
             >
               Users
             </button>
             <button
               onClick={() => setActiveTab('payments')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'payments' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+              className={`py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${activeTab === 'payments' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
             >
               Payments
             </button>
@@ -409,98 +409,98 @@ const AdminPanel = () => {
         {activeTab === 'dashboard' && (
           <div className="space-y-8">
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+              <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-600 text-sm">Total Users</p>
-                    <p className="text-3xl font-bold text-gray-800">{users.length}</p>
+                    <p className="text-gray-600 text-xs sm:text-sm">Total Users</p>
+                    <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800">{users.length}</p>
                   </div>
-                  <div className="bg-blue-100 rounded-full p-3">
-                    <Users className="w-6 h-6 text-blue-600" />
+                  <div className="bg-blue-100 rounded-full p-2 sm:p-3">
+                    <Users className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-blue-600" />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm p-6">
+              <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-600 text-sm">Active Users</p>
-                    <p className="text-3xl font-bold text-green-600">
+                    <p className="text-gray-600 text-xs sm:text-sm">Active Users</p>
+                    <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-green-600">
                       {users.filter(user => user.isActive).length}
                     </p>
                   </div>
-                  <div className="bg-green-100 rounded-full p-3">
-                    <Users className="w-6 h-6 text-green-600" />
+                  <div className="bg-green-100 rounded-full p-2 sm:p-3">
+                    <Users className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-green-600" />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm p-6">
+              <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-600 text-sm">Administrators</p>
-                    <p className="text-3xl font-bold text-purple-600">
+                    <p className="text-gray-600 text-xs sm:text-sm">Administrators</p>
+                    <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-purple-600">
                       {users.filter(user => user.role === 'admin').length}
                     </p>
                   </div>
-                  <div className="bg-purple-100 rounded-full p-3">
-                    <Shield className="w-6 h-6 text-purple-600" />
+                  <div className="bg-purple-100 rounded-full p-2 sm:p-3">
+                    <Shield className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-purple-600" />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm p-6">
+              <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 col-span-2 lg:col-span-1">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-600 text-sm">Total Collection</p>
-                    <p className="text-2xl font-bold text-green-600">₹{paymentStats.totalAmount.toLocaleString()}</p>
+                    <p className="text-gray-600 text-xs sm:text-sm">Total Collection</p>
+                    <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">₹{paymentStats.totalAmount.toLocaleString()}</p>
                   </div>
-                  <div className="bg-green-100 rounded-full p-3">
-                    <TrendingUp className="w-6 h-6 text-green-600" />
+                  <div className="bg-green-100 rounded-full p-2 sm:p-3">
+                    <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-green-600" />
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Quick Actions */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Quick Actions</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">Quick Actions</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 <Link
                   to="/admin/add-flat"
-                  className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-3"
+                  className="p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2 sm:space-x-3"
                 >
-                  <div className="bg-blue-100 rounded-full p-2">
-                    <Plus className="w-5 h-5 text-blue-600" />
+                  <div className="bg-blue-100 rounded-full p-1.5 sm:p-2">
+                    <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                   </div>
                   <div>
-                    <h3 className="font-medium text-gray-800">Add New Flat</h3>
-                    <p className="text-sm text-gray-500">Register a new flat</p>
+                    <h3 className="text-sm sm:text-base font-medium text-gray-800">Add New Flat</h3>
+                    <p className="text-xs sm:text-sm text-gray-500">Register a new flat</p>
                   </div>
                 </Link>
                 <button
                   onClick={() => setActiveTab('users')}
-                  className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-3 text-left"
+                  className="p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2 sm:space-x-3 text-left"
                 >
-                  <div className="bg-purple-100 rounded-full p-2">
-                    <Users className="w-5 h-5 text-purple-600" />
+                  <div className="bg-purple-100 rounded-full p-1.5 sm:p-2">
+                    <Users className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
                   </div>
                   <div>
-                    <h3 className="font-medium text-gray-800">Manage Users</h3>
-                    <p className="text-sm text-gray-500">View and edit users</p>
+                    <h3 className="text-sm sm:text-base font-medium text-gray-800">Manage Users</h3>
+                    <p className="text-xs sm:text-sm text-gray-500">View and edit users</p>
                   </div>
                 </button>
                 <button
                   onClick={() => setActiveTab('payments')}
-                  className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-3 text-left"
+                  className="p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2 sm:space-x-3 text-left sm:col-span-2 lg:col-span-1"
                 >
-                  <div className="bg-green-100 rounded-full p-2">
-                    <CreditCard className="w-5 h-5 text-green-600" />
+                  <div className="bg-green-100 rounded-full p-1.5 sm:p-2">
+                    <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                   </div>
                   <div>
-                    <h3 className="font-medium text-gray-800">View Payments</h3>
-                    <p className="text-sm text-gray-500">Check payment history</p>
+                    <h3 className="text-sm sm:text-base font-medium text-gray-800">View Payments</h3>
+                    <p className="text-xs sm:text-sm text-gray-500">Check payment history</p>
                   </div>
                 </button>
               </div>
@@ -511,19 +511,19 @@ const AdminPanel = () => {
         {/* Users Tab */}
         {activeTab === 'users' && (
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="p-4 sm:p-6 border-b border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
-                <h2 className="text-xl font-bold text-gray-800">User Management</h2>
-                <p className="text-gray-600">Manage all system users</p>
+                <h2 className="text-lg sm:text-xl font-bold text-gray-800">User Management</h2>
+                <p className="text-sm sm:text-base text-gray-600">Manage all system users</p>
               </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400" />
+                  <Search className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                 </div>
                 <input
                   type="text"
                   placeholder="Search users..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full md:w-64"
+                  className="pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full md:w-64"
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
                 />
@@ -532,8 +532,8 @@ const AdminPanel = () => {
             
             <div className="overflow-x-auto">
               {loading.users ? (
-                <div className="p-8 text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <div className="p-6 sm:p-8 text-center">
+                  <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
                   <p className="text-gray-600">Loading users...</p>
                 </div>
               ) : (
@@ -541,25 +541,37 @@ const AdminPanel = () => {
                   <table className="w-full">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">User</th>
-                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Role</th>
-                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Flat</th>
-                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Status</th>
-                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Joined</th>
-                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Actions</th>
+                        <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-gray-500">User</th>
+                        <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-gray-500 hidden sm:table-cell">Role</th>
+                        <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-gray-500 hidden md:table-cell">Flat</th>
+                        <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-gray-500">Status</th>
+                        <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-gray-500 hidden lg:table-cell">Joined</th>
+                        <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-gray-500">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {paginatedUsers.length > 0 ? (
                         paginatedUsers.map((user) => (
                           <tr key={user._id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4">
+                            <td className="px-3 sm:px-6 py-3 sm:py-4">
                               <div>
-                                <div className="text-sm font-medium text-gray-800">{user.username}</div>
-                                <div className="text-sm text-gray-600">{user.email}</div>
+                                <div className="text-xs sm:text-sm font-medium text-gray-800">{user.username}</div>
+                                <div className="text-xs sm:text-sm text-gray-600">{user.email}</div>
+                                <div className="sm:hidden">
+                                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full mt-1 ${
+                                    user.role === 'admin'
+                                      ? 'bg-purple-100 text-purple-800'
+                                      : 'bg-blue-100 text-blue-800'
+                                  }`}>
+                                    {user.role}
+                                  </span>
+                                  {user.flatNumber && (
+                                    <span className="ml-2 text-xs text-gray-500">Flat {user.flatNumber}</span>
+                                  )}
+                                </div>
                               </div>
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="px-3 sm:px-6 py-3 sm:py-4 hidden sm:table-cell">
                               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                                 user.role === 'admin'
                                   ? 'bg-purple-100 text-purple-800'
@@ -568,10 +580,10 @@ const AdminPanel = () => {
                                 {user.role}
                               </span>
                             </td>
-                            <td className="px-6 py-4 text-sm text-gray-600">
+                            <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-600 hidden md:table-cell">
                               {user.flatNumber || '-'}
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="px-3 sm:px-6 py-3 sm:py-4">
                               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                                 user.isActive
                                   ? 'bg-green-100 text-green-800'
@@ -580,20 +592,20 @@ const AdminPanel = () => {
                                 {user.isActive ? 'Active' : 'Inactive'}
                               </span>
                             </td>
-                            <td className="px-6 py-4 text-sm text-gray-600">
+                            <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-600 hidden lg:table-cell">
                               {new Date(user.createdAt).toLocaleDateString()}
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="px-3 sm:px-6 py-3 sm:py-4">
                               <button
                                 onClick={() => toggleUserStatus(user._id)}
-                                className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 transition-colors"
+                                className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 transition-colors text-xs sm:text-sm"
                               >
                                 {user.isActive ? (
-                                  <ToggleRight className="w-5 h-5" />
+                                  <ToggleRight className="w-4 h-4 sm:w-5 sm:h-5" />
                                 ) : (
-                                  <ToggleLeft className="w-5 h-5" />
+                                  <ToggleLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                                 )}
-                                <span className="text-sm">
+                                <span className="hidden sm:inline">
                                   {user.isActive ? 'Deactivate' : 'Activate'}
                                 </span>
                               </button>
@@ -602,8 +614,8 @@ const AdminPanel = () => {
                         ))
                       ) : (
                         <tr>
-                          <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
-                            <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                          <td colSpan="6" className="px-3 sm:px-6 py-6 sm:py-8 text-center text-gray-500">
+                            <Users className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-4 text-gray-300" />
                             <p>No users found</p>
                           </td>
                         </tr>
@@ -611,8 +623,8 @@ const AdminPanel = () => {
                     </tbody>
                   </table>
                   {totalUserPages > 1 && (
-                    <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-                      <div className="text-sm text-gray-600">
+                    <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                      <div className="text-xs sm:text-sm text-gray-600">
                         Showing <span className="font-medium">{(currentUserPage - 1) * itemsPerPage + 1}</span> to{' '}
                         <span className="font-medium">{Math.min(currentUserPage * itemsPerPage, filteredUsers.length)}</span> of{' '}
                         <span className="font-medium">{filteredUsers.length}</span> users
@@ -621,14 +633,14 @@ const AdminPanel = () => {
                         <button
                           onClick={() => setCurrentUserPage(prev => Math.max(prev - 1, 1))}
                           disabled={currentUserPage === 1}
-                          className="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-2 sm:px-3 py-1 border border-gray-300 rounded-md text-xs sm:text-sm font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Previous
                         </button>
                         <button
                           onClick={() => setCurrentUserPage(prev => Math.min(prev + 1, totalUserPages))}
                           disabled={currentUserPage === totalUserPages}
-                          className="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-2 sm:px-3 py-1 border border-gray-300 rounded-md text-xs sm:text-sm font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Next
                         </button>
@@ -644,36 +656,36 @@ const AdminPanel = () => {
         {/* Payments Tab */}
         {activeTab === 'payments' && (
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
+            <div className="p-4 sm:p-6 border-b border-gray-200">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-green-100 rounded-full p-2">
-                    <Calendar className="w-6 h-6 text-green-600" />
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <div className="bg-green-100 rounded-full p-1.5 sm:p-2">
+                    <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-gray-800">Payment History</h2>
-                    <p className="text-gray-600">Filter and view payment records</p>
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-800">Payment History</h2>
+                    <p className="text-sm sm:text-base text-gray-600">Filter and view payment records</p>
                   </div>
                 </div>
                 
-                <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Search className="h-5 w-5 text-gray-400" />
+                      <Search className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                     </div>
                     <input
                       type="text"
                       placeholder="Search payments..."
-                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full"
+                      className="pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full"
                       value={paymentSearch}
                       onChange={(e) => setPaymentSearch(e.target.value)}
                     />
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 sm:gap-2">
                     <select
                       value={selectedMonth}
                       onChange={(e) => setSelectedMonth(e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="px-2 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="">All Months</option>
                       {months.map(month => (
@@ -684,7 +696,7 @@ const AdminPanel = () => {
                     <select
                       value={selectedYear}
                       onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="px-2 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       {[2025, 2024, 2023, 2022, 2021, 2020].map(year => (
                         <option key={year} value={year}>{year}</option>
@@ -696,19 +708,19 @@ const AdminPanel = () => {
             </div>
 
             {/* Payment Stats */}
-            <div className="p-6 bg-gray-50 border-b border-gray-200">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 sm:p-6 bg-gray-50 border-b border-gray-200">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-blue-600">{paymentStats.totalPayments}</p>
-                  <p className="text-gray-600 text-sm">Total Payments</p>
+                  <p className="text-xl sm:text-2xl font-bold text-blue-600">{paymentStats.totalPayments}</p>
+                  <p className="text-gray-600 text-xs sm:text-sm">Total Payments</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-green-600">₹{paymentStats.totalAmount.toLocaleString()}</p>
-                  <p className="text-gray-600 text-sm">Total Amount</p>
+                  <p className="text-xl sm:text-2xl font-bold text-green-600">₹{paymentStats.totalAmount.toLocaleString()}</p>
+                  <p className="text-gray-600 text-xs sm:text-sm">Total Amount</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-purple-600">{paymentStats.uniqueFlats}</p>
-                  <p className="text-gray-600 text-sm">Flats Paid</p>
+                  <p className="text-xl sm:text-2xl font-bold text-purple-600">{paymentStats.uniqueFlats}</p>
+                  <p className="text-gray-600 text-xs sm:text-sm">Flats Paid</p>
                 </div>
               </div>
             </div>
@@ -716,8 +728,8 @@ const AdminPanel = () => {
             {/* Payments Table */}
             <div className="overflow-x-auto">
               {loading.payments ? (
-                <div className="p-8 text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <div className="p-6 sm:p-8 text-center">
+                  <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
                   <p className="text-gray-600">Loading payments...</p>
                 </div>
               ) : (
@@ -727,27 +739,30 @@ const AdminPanel = () => {
                       <table className="w-full">
                         <thead className="bg-gray-50">
                           <tr>
-                            <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Flat No.</th>
-                            <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Month</th>
-                            <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Year</th>
-                            <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Amount</th>
-                            <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Payment Mode</th>
-                            <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Paid On</th>
+                            <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-gray-500">Flat No.</th>
+                            <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-gray-500">Month</th>
+                            <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-gray-500 hidden sm:table-cell">Year</th>
+                            <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-gray-500">Amount</th>
+                            <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-gray-500 hidden md:table-cell">Payment Mode</th>
+                            <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-gray-500 hidden lg:table-cell">Paid On</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
                           {paginatedPayments.map((payment) => (
                             <tr key={payment._id} className="hover:bg-gray-50">
-                              <td className="px-6 py-4 text-sm font-medium text-gray-800">{payment.flatNumber}</td>
-                              <td className="px-6 py-4 text-sm text-gray-600">{payment.month}</td>
-                              <td className="px-6 py-4 text-sm text-gray-600">{payment.year}</td>
-                              <td className="px-6 py-4 text-sm font-medium text-green-600">₹{payment.amount.toLocaleString()}</td>
-                              <td className="px-6 py-4">
+                              <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium text-gray-800">{payment.flatNumber}</td>
+                              <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-600">
+                                {payment.month}
+                                <span className="sm:hidden text-gray-500 block">{payment.year}</span>
+                              </td>
+                              <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-600 hidden sm:table-cell">{payment.year}</td>
+                              <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium text-green-600">₹{payment.amount.toLocaleString()}</td>
+                              <td className="px-3 sm:px-6 py-3 sm:py-4 hidden md:table-cell">
                                 <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
                                   {payment.paymentMode}
                                 </span>
                               </td>
-                              <td className="px-6 py-4 text-sm text-gray-600">
+                              <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-600 hidden lg:table-cell">
                                 {new Date(payment.paidOn).toLocaleDateString()}
                               </td>
                             </tr>
@@ -755,8 +770,8 @@ const AdminPanel = () => {
                         </tbody>
                       </table>
                       {totalPaymentPages > 1 && (
-                        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-                          <div className="text-sm text-gray-600">
+                        <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                          <div className="text-xs sm:text-sm text-gray-600">
                             Showing <span className="font-medium">{(currentPaymentPage - 1) * itemsPerPage + 1}</span> to{' '}
                             <span className="font-medium">{Math.min(currentPaymentPage * itemsPerPage, filteredPayments.length)}</span> of{' '}
                             <span className="font-medium">{filteredPayments.length}</span> payments
@@ -765,14 +780,14 @@ const AdminPanel = () => {
                             <button
                               onClick={() => setCurrentPaymentPage(prev => Math.max(prev - 1, 1))}
                               disabled={currentPaymentPage === 1}
-                              className="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="px-2 sm:px-3 py-1 border border-gray-300 rounded-md text-xs sm:text-sm font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               Previous
                             </button>
                             <button
                               onClick={() => setCurrentPaymentPage(prev => Math.min(prev + 1, totalPaymentPages))}
                               disabled={currentPaymentPage === totalPaymentPages}
-                              className="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="px-2 sm:px-3 py-1 border border-gray-300 rounded-md text-xs sm:text-sm font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               Next
                             </button>
@@ -781,8 +796,8 @@ const AdminPanel = () => {
                       )}
                     </>
                   ) : (
-                    <div className="p-8 text-center text-gray-500">
-                      <CreditCard className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                    <div className="p-6 sm:p-8 text-center text-gray-500">
+                      <CreditCard className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-4 text-gray-300" />
                       <p>No payments found for the selected criteria</p>
                     </div>
                   )}
